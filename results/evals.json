@@ -1,0 +1,167 @@
+{
+  "label": "orchestration evals, stub model",
+  "passed": 32,
+  "total": 32,
+  "results": [
+    {
+      "name": "family_with_lost_response",
+      "passed": true,
+      "detail": "appointments for ['pt_1001', 'pt_1002', 'pt_1003']"
+    },
+    {
+      "name": "replay_of_bad_call_pattern",
+      "passed": true,
+      "detail": "first status booked (reconciled), rows per patient {'pt_1001': 1, 'pt_1002': 1, 'pt_1003': 1}"
+    },
+    {
+      "name": "timeout_before_commit",
+      "passed": true,
+      "detail": "3 rows"
+    },
+    {
+      "name": "outage_never_says_booked",
+      "passed": true,
+      "detail": "pending=['self'] claim flagged=True"
+    },
+    {
+      "name": "pending_retry_same_key_no_dup",
+      "passed": true,
+      "detail": "key reused=True"
+    },
+    {
+      "name": "slot_conflict_then_rebook",
+      "passed": true,
+      "detail": "failed then booked"
+    },
+    {
+      "name": "double_book_call_no_dup",
+      "passed": true,
+      "detail": "3 rows after repeat calls"
+    },
+    {
+      "name": "unknown_patient",
+      "passed": true,
+      "detail": "stays on identify, no crash"
+    },
+    {
+      "name": "identify_backend_down",
+      "passed": true,
+      "detail": "error surfaced, large model routed next"
+    },
+    {
+      "name": "lang_si_stays_english",
+      "passed": true,
+      "detail": "single 'S\u00ed' and 'S\u00ed, that works' stay English"
+    },
+    {
+      "name": "lang_name_stays_english",
+      "passed": true,
+      "detail": "Spanish names stay English"
+    },
+    {
+      "name": "lang_real_spanish_switches",
+      "passed": true,
+      "detail": "full Spanish sentence switches"
+    },
+    {
+      "name": "lang_explicit_both_ways",
+      "passed": true,
+      "detail": "es, en"
+    },
+    {
+      "name": "end_call_blocked_mid_booking",
+      "passed": true,
+      "detail": "pending work. Still open: Maria. Tell the caller what is still open and ask if they want to finish it now. If the caller says someone does not need a visit, call decline_patient for that person. Do NOT transfer the call unless the caller asks for a person."
+    },
+    {
+      "name": "end_call_needs_goodbye",
+      "passed": true,
+      "detail": "caller has not said goodbye"
+    },
+    {
+      "name": "end_call_after_goodbye_ok",
+      "passed": true,
+      "detail": "caller said goodbye, no pending work, agent said goodbye"
+    },
+    {
+      "name": "wait_my_son_not_goodbye",
+      "passed": true,
+      "detail": "continuation phrase is not a goodbye"
+    },
+    {
+      "name": "silence_policy",
+      "passed": true,
+      "detail": "wait, reprompt, handoff (pending work is handed off, never dropped)"
+    },
+    {
+      "name": "fallback_resumes_same_step",
+      "passed": true,
+      "detail": "swapped at step choose_slot; finished with 3 appointments, none skipped"
+    },
+    {
+      "name": "instruction_identical_for_any_model",
+      "passed": true,
+      "detail": "instruction rebuilds identically from saved state"
+    },
+    {
+      "name": "prompt_small_and_retrieval_tiny",
+      "passed": true,
+      "detail": "prompt 1084 chars, retrieval result 359 chars"
+    },
+    {
+      "name": "retrieval_correct",
+      "passed": true,
+      "detail": "top=Pediatrics"
+    },
+    {
+      "name": "routing",
+      "passed": true,
+      "detail": "small,large,large,large"
+    },
+    {
+      "name": "routing_share_in_family_call",
+      "passed": true,
+      "detail": "small-model share 93% of turns in a clean family call (stub-driven, routing only)"
+    },
+    {
+      "name": "output_guard_allows_truth",
+      "passed": true,
+      "detail": "true claim passes"
+    },
+    {
+      "name": "call_log_and_replay",
+      "passed": true,
+      "detail": "events logged: ['book_response', 'book_unknown_outcome', 'identify_done', 'reconcile']"
+    },
+    {
+      "name": "release_gate_hash",
+      "passed": true,
+      "detail": "config version 1.0.0 references an in-repo prompt"
+    },
+    {
+      "name": "real_call_premature_claim_blocked",
+      "passed": true,
+      "detail": "spoken text: 'One moment while I confirm that with the clinic. Lucas can have the next opening. Does that work for him?'"
+    },
+    {
+      "name": "real_call_true_statements_not_blocked",
+      "passed": true,
+      "detail": "true statements blocked: 0; false 'everyone' claims blocked: 2/2"
+    },
+    {
+      "name": "end_call_refusal_does_not_invite_transfer",
+      "passed": true,
+      "detail": "pending work. Still open: Maria. Tell the caller what is still open and ask if they want to finish it now. If the caller says someone does not need a visit, call decline_patient for that person. Do NOT transfer the call unless the caller asks for a person."
+    },
+    {
+      "name": "transfer_needs_a_reason_and_does_not_stick",
+      "passed": true,
+      "detail": "unasked transfer declined=True, asked transfer allowed=True, tier after failed transfer=small"
+    },
+    {
+      "name": "fault_env_slow_lookup",
+      "passed": true,
+      "detail": "slow lookup injected via env: 0.20s; default is off"
+    }
+  ]
+}

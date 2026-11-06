@@ -1,0 +1,15 @@
+{
+  "_source": "https://platform.claude.com/docs/en/about-claude/pricing (fetched 2026-11-05). List prices, USD per million tokens, base (not batch). Re-check before quoting: prices change.",
+  "_model_assumption": "The task's 'large reasoning model' and 'small fast model' are unnamed. The baseline model is priced as Claude Sonnet 5.5 (large) and Claude Haiku 5.5 (small). This is an assumption, not a fact about the task.",
+  "large_model_usd_per_1m_input_tokens": 2.0,
+  "large_model_usd_per_1m_output_tokens": 10.0,
+  "large_model_usd_per_1m_cache_read_tokens": 0.10,
+  "small_model_usd_per_1m_input_tokens": 0.10,
+  "small_model_usd_per_1m_output_tokens": 0.50,
+  "small_model_usd_per_1m_cache_read_tokens": 0.01,
+  "small_model_long_prompt_threshold_tokens": 100000,
+  "small_model_long_prompt_input_usd_per_1m": 0.50,
+  "small_model_long_prompt_output_usd_per_1m": 2.50,
+  "scope": "LLM tokens only. STT, TTS, telephony and LiveKit Cloud are NOT included and must be priced separately from their own pricing pages.",
+  "rates_are_placeholders": false
+}

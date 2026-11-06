@@ -1,0 +1,237 @@
+[
+  {
+    "t": 0.0,
+    "kind": "agent_speech",
+    "start": 0.0,
+    "end": 3.0,
+    "text": "Thanks for calling the clinic, this is Ava.",
+    "source": "final",
+    "lang": "en"
+  },
+  {
+    "t": 5.0,
+    "kind": "caller",
+    "text": "Hi, I need to book for me and my two kids",
+    "dur": 2.0,
+    "src": "log"
+  },
+  {
+    "t": 7.0,
+    "kind": "tool_call",
+    "name": "identify_patient",
+    "start": 7.0,
+    "end": 14.8,
+    "args": {
+      "first": "Maria"
+    },
+    "result": {
+      "found": true,
+      "patient_id": "pt_1001"
+    }
+  },
+  {
+    "t": 13.0,
+    "kind": "caller",
+    "text": "Hello? Are you there?",
+    "dur": 1.5,
+    "src": "log"
+  },
+  {
+    "t": 14.8,
+    "kind": "tool_result",
+    "name": "identify_patient",
+    "filler_played": false
+  },
+  {
+    "t": 16.0,
+    "kind": "agent_speech",
+    "start": 16.0,
+    "end": 17.5,
+    "text": "Are you still there?",
+    "source": "final",
+    "lang": "en"
+  },
+  {
+    "t": 30.0,
+    "kind": "agent_speech",
+    "start": 30.0,
+    "end": 32.0,
+    "text": "What is the date of birth?",
+    "source": "final",
+    "lang": "en"
+  },
+  {
+    "t": 31.5,
+    "kind": "caller_partial",
+    "text": "Fourteenth of March"
+  },
+  {
+    "t": 32.0,
+    "kind": "agent_speech",
+    "start": 32.0,
+    "end": 35.0,
+    "text": "Thank you, let me check that date",
+    "source": "speculative",
+    "lang": "en"
+  },
+  {
+    "t": 32.6,
+    "kind": "caller",
+    "text": "Fourteenth of March, eighty-two",
+    "dur": 2.0,
+    "src": "harness"
+  },
+  {
+    "t": 33.0,
+    "kind": "agent_speech",
+    "start": 33.0,
+    "end": 35.5,
+    "text": "Got it, one moment while I confirm",
+    "source": "final",
+    "lang": "en"
+  },
+  {
+    "t": 38.5,
+    "kind": "agent_speech",
+    "start": 38.5,
+    "end": 41.0,
+    "text": "Is March fourteenth, nineteen eighty-two correct?",
+    "source": "final",
+    "lang": "en"
+  },
+  {
+    "t": 41.0,
+    "kind": "caller",
+    "text": "S\u00ed, correct",
+    "dur": 1.2,
+    "src": "log"
+  },
+  {
+    "t": 43.0,
+    "kind": "agent_speech",
+    "start": 43.0,
+    "end": 45.0,
+    "text": "Perfecto, continuamos en espa\u00f1ol.",
+    "source": "final",
+    "lang": "es"
+  },
+  {
+    "t": 80.0,
+    "kind": "caller",
+    "text": "English, please",
+    "dur": 1.2,
+    "src": "log"
+  },
+  {
+    "t": 81.5,
+    "kind": "agent_speech",
+    "start": 81.5,
+    "end": 83.5,
+    "text": "Gracias, continuamos en espa\u00f1ol",
+    "source": "final",
+    "lang": "es"
+  },
+  {
+    "t": 95.0,
+    "kind": "tool_call",
+    "name": "book_appointment",
+    "start": 95.0,
+    "end": 125.0,
+    "args": {
+      "patient_id": "pt_1001"
+    },
+    "result": {
+      "success": false,
+      "error": "timeout"
+    }
+  },
+  {
+    "t": 125.0,
+    "kind": "tool_result",
+    "name": "book_appointment",
+    "filler_played": false
+  },
+  {
+    "t": 126.0,
+    "kind": "agent_speech",
+    "start": 126.0,
+    "end": 127.5,
+    "text": "You're all booked.",
+    "source": "final",
+    "lang": "es"
+  },
+  {
+    "t": 126.0,
+    "kind": "background_retry",
+    "name": "book_appointment",
+    "patient_id": "pt_1001"
+  },
+  {
+    "t": 160.0,
+    "kind": "agent_speech",
+    "start": 160.0,
+    "end": 161.5,
+    "text": "Is there anything else?",
+    "source": "final",
+    "lang": "es"
+  },
+  {
+    "t": 162.0,
+    "kind": "caller",
+    "text": "No, wait, my son too",
+    "dur": 2.0,
+    "src": "log"
+  },
+  {
+    "t": 165.0,
+    "kind": "agent_speech",
+    "start": 165.0,
+    "end": 168.0,
+    "text": "Of course. What is his name and date of birth?",
+    "source": "final",
+    "lang": "es"
+  },
+  {
+    "t": 404.0,
+    "kind": "caller",
+    "text": "His name is Lucas, born June second twenty thirteen",
+    "dur": 3.0,
+    "src": "harness"
+  },
+  {
+    "t": 408.0,
+    "kind": "agent_speech",
+    "start": 408.0,
+    "end": 410.0,
+    "text": "Booking Lucas now.",
+    "source": "final",
+    "lang": "es"
+  },
+  {
+    "t": 410.0,
+    "kind": "tool_call",
+    "name": "book_appointment",
+    "start": 410.0,
+    "end": null,
+    "args": {
+      "patient_id": "pt_1002"
+    },
+    "result": null
+  },
+  {
+    "t": 470.0,
+    "kind": "agent_speech",
+    "start": 470.0,
+    "end": 472.0,
+    "text": "Thank you for calling. Goodbye.",
+    "source": "final",
+    "lang": "es"
+  },
+  {
+    "t": 472.0,
+    "kind": "end_call",
+    "reason": "silence_end_call_s",
+    "pending_tool": true,
+    "caller_said_goodbye": false
+  }
+]

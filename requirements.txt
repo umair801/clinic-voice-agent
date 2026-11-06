@@ -1,0 +1,5 @@
+livekit-agents[deepgram,elevenlabs,anthropic,silero,turn-detector]==1.8.10
+fastapi
+uvicorn
+httpx
+python-dotenv

@@ -1,0 +1,16 @@
+{
+  "_note": "Mirrors the agent config excerpt in the Linear Health task. Baseline only. Do not edit to fix failures; fixes live in the new agent.",
+  "agent": "ava_inbound_prod",
+  "llm": "large reasoning model",
+  "llm_fallbacks": ["small fast model"],
+  "system_prompt_chars": 160000,
+  "knowledge_base": "off",
+  "max_call_duration_s": 600,
+  "speculative_turn": true,
+  "soft_timeout_s": 8,
+  "silence_end_call_s": 60,
+  "tool_call_sound": "none",
+  "language_rule": "Switch the whole call to Spanish if the caller's message is in any language other than English.",
+  "workflow_edges": {"wrap_up->end_call": "the caller said no"},
+  "deployment": "prompt edited directly in the dashboard on the live agent"
+}

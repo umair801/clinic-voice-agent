@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clinic Phone Agent: No Silent Calls, No False Bookings</title>
+<style>
+:root{--bg:#fff;--fg:#14202b;--mut:#5b6b7a;--line:#dde4ea;--ok:#127a43;--bad:#b3261e;--pend:#8a5a00;--card:#f6f9fb}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1720;--fg:#e8eef3;--mut:#9fb0bf;--line:#26333f;--ok:#4cc38a;--bad:#ff8a80;--pend:#f2b84b;--card:#16212c}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif}
+main{max-width:860px;margin:0 auto;padding:24px 16px 64px}h1{font-size:1.5rem;margin:.2em 0}h2{font-size:1.1rem;margin:1.8em 0 .5em}
+p.sub{color:var(--mut);margin:.3em 0}.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0}
+table{width:100%;border-collapse:collapse;font-size:.92rem}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.ok{color:var(--ok);font-weight:600}.bad{color:var(--bad);font-weight:600}.pend{color:var(--pend);font-weight:600}.mut{color:var(--mut)}
+@media(max-width:560px){th:nth-child(3),td:nth-child(3){display:none}}
+</style></head><body><main>
+<h1>Clinic phone agent: no silent calls, no false bookings</h1>
+<p class="sub">Clinics lose callers to dead air and wrong bookings. This agent answers inbound calls, books every family member exactly once, and says "booked" only when the clinic record confirms it.</p>
+<p class="sub">For community health centers and specialty practices. All patient data on this page is synthetic.</p>
+<div class="card" id="status">Loading results...</div>
+<h2>Try it with a synthetic patient</h2>
+<div class="card"><p class="sub">The agent books only patients who exist in the clinic record, and every record here is synthetic. Say a first name and date of birth from this list. Unknown names get "no matching record", never an invented one. Please do not give real personal details.</p>
+<table><tbody><tr><td>Maria</td><td>March 14, 1982</td><td class="mut">parent</td></tr><tr><td>Lucas</td><td>June 2, 2013</td><td class="mut">child</td></tr><tr><td>Sofia</td><td>September 21, 2016</td><td class="mut">child</td></tr></tbody></table></div>
+<h2>Failure by failure</h2>
+<table id="tbl"><thead><tr><th>#</th><th>Failure</th><th>Baseline (simulated replay)</th><th>Now</th></tr></thead><tbody></tbody></table>
+<p class="mut" id="note"></p>
+<script>
+const FAILS=[
+[1,"Silence while patient lookup runs","identify_patient: 7.8s of dead air","Filler speech after 1s plus thinking sound; 4s tool budget. Voice-layer latency: measured on live calls only."],
+[2,"Callers keep saying hello?","9.0s gap after a caller turn","Endpointing and preemptive generation configured. Measured on live calls only."],
+[3,"Two half-answers stitched together","2.0s overlapping speech","Adaptive interruption configured. Measured on live calls only."],
+[4,"Whole call switches to Spanish","Switched on 'Si, correct'","Switch only on a clear request or a full Spanish sentence; switch back on request."],
+[5,"Says booked after a timeout","False 'booked' claim, silent retry","Status booked/pending/failed, idempotency key, reconcile before retry."],
+[6,"Duplicate parent, no children","Parent 2, children 0","One state for the whole family; one appointment each."],
+[7,"Ends call mid-booking","Hung up with a booking pending","end_call needs caller goodbye, no pending work."],
+[8,"Fallback model skips steps","Skipped identity steps","Workflow step is derived from external state."],
+[9,"160K-character prompt","160,000 chars","~1,100 char prompt plus retrieval (~360 chars per lookup)."],
+[10,"Cost per minute","$0.1326 modeled","Modeled only until live calls: see cost panel."],
+[11,"Dashboard edits vanish","Edit lost on deploy","Config and prompts in the repo, versioned, eval gate, rollback."]];
+const tb=document.querySelector("#tbl tbody");
+FAILS.forEach(f=>{const tr=document.createElement("tr");f.forEach(c=>{const td=document.createElement("td");td.textContent=c;tr.appendChild(td)});tb.appendChild(tr)});
+Promise.all(["evals","live_calls","cost_model"].map(n=>fetch("/api/results/"+n).then(r=>r.json()).catch(()=>({available:false})))).then(([e,l,c])=>{
+ const s=document.getElementById("status");
+ let h="";
+ h+= e.total?`<div><span class="ok">${e.passed}/${e.total}</span> orchestration evals passed <span class="mut">(stub model: tests the safeguards, not the language model)</span></div>`:"";
+ h+= l.available===false?`<div class="pend">Live test-call results: pending. No call numbers are shown until real test calls are run.</div>`:`<div>Live test calls: ${l.calls} calls, p50 latency ${l.latency_p50_s}s, ${l.cost_per_min_usd} USD/min (LLM). <span class="mut">Test-call results, synthetic patients.</span></div>`;
+ h+= c.new_llm_usd_per_min?`<div class="mut">Modeled LLM cost per minute: ${c.new_llm_usd_per_min} USD (baseline ${c.baseline_llm_usd_per_min_same_method}). Modeled, not measured; LLM tokens only.</div>`:"";
+ s.innerHTML=h;});
+document.getElementById("note").textContent="Baseline column is a simulation of the reported failing call, not a real call. Synthetic data only.";
+</script></main></body></html>

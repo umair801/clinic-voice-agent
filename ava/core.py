@@ -1,0 +1,176 @@
+"""AvaCore: the framework-independent brain. Voice worker and evals both drive THIS code.
+
+Owns: call state, tool behavior, language policy, end_call guard, routing, retrieval, logging.
+The LLM only chooses what to say and which tool to call. Every rule that must hold is enforced here.
+"""
+import time
+
+from ava import guards, language
+from ava.backend.booking import make_key
+from ava.backend.reliable import reliable_book
+from ava.retrieval import KnowledgeBase
+from ava.router import HUMAN_REQUEST, route
+from ava.state import BookingStatus, CallState, Step
+from ava.telemetry import CallLogger
+
+
+class AvaCore:
+    def __init__(self, call_id, transport, kb=None, logger=None, state=None, book_pause=0.3):
+        self.state = state or CallState(call_id=call_id)
+        self.t = transport
+        self.kb = kb or KnowledgeBase()
+        self.log = logger or CallLogger(call_id)
+        self.book_pause = book_pause
+        self.last_tool_error = False
+        self.last_user_text = ""
+
+    # ---- per-turn hook: runs BEFORE the model sees the turn ---------------
+    def on_user_turn(self, text):
+        s = self.state
+        s.turn_count += 1
+        self.last_user_text = text
+        dec = language.observe(s, text)
+        if dec.switched:
+            self.log.event("language_switch", to=dec.language, reason=dec.reason)
+        s.caller_goodbye = guards.detect_goodbye(text, s.step == Step.WRAP_UP)
+        s.silence_prompts_sent = 0
+        if HUMAN_REQUEST.search(text or ""):
+            s.human_requested = True
+        tier, reason = route(s, text, self.last_tool_error)
+        return {"tier": tier, "route_reason": reason, "instruction": s.instruction(), "language": s.language,
+                "language_switched": dec.switched}
+
+    def mark_greeted(self):
+        self.state.greeted = True
+
+    # ---- tools ----------------------------------------------------------
+    async def set_party_size(self, n):
+        self.state.expected_party_size = max(1, min(int(n), 8))
+        return {"ok": True, "party_size": self.state.expected_party_size}
+
+    async def identify_patient(self, key, first_name, dob):
+        s = self.state
+        p = s.add_patient(key, first_name, dob)
+        s.pending_tools.append("identify_patient")
+        t0 = time.time()
+        try:
+            res = await self.t.identify(first_name, dob)
+            self.last_tool_error = False
+        except Exception as e:
+            self.last_tool_error = True
+            self.log.event("identify_error", level="error", error=type(e).__name__)
+            return {"found": False, "error": "lookup unavailable", "say": "Tell the caller you could not reach the records right now and offer a transfer."}
+        finally:
+            s.pending_tools.remove("identify_patient")
+        self.log.event("identify_done", ms=round((time.time() - t0) * 1000), found=bool(res.get("found")))
+        if res.get("found"):
+            p.patient_id = res["patient_id"]
+            return {"found": True, "key": key}
+        return {"found": False, "ambiguous": bool(res.get("ambiguous")),
+                "say": "No matching record. Ask the caller to repeat the spelling and date of birth, or offer a transfer."}
+
+    async def decline_patient(self, key):
+        p = self.state.patient(key)
+        if p:
+            p.declined = True
+        return {"ok": True}
+
+    async def find_slots(self, query="", limit=3):
+        provs = self.kb.find_providers(query, k=5) if query else []
+        slots = await self.t.slots([p["id"] for p in provs] or None, None, limit)
+        return {"slots": slots}
+
+    async def choose_slot(self, key, slot_id):
+        p = self.state.patient(key)
+        if not p:
+            return {"ok": False, "error": "unknown patient key"}
+        p.slot = slot_id
+        return {"ok": True, "status": "slot_chosen_not_booked",
+                "say": "Slot noted. This is NOT a booking yet. Call book_appointment for this person before saying anything is booked."}
+
+    async def find_provider(self, query, city=""):
+        provs = self.kb.find_providers(query, k=3, city=city or None)
+        return {"providers": self.kb.format(provs)}
+
+    async def book_appointment(self, key):
+        s = self.state
+        p = s.patient(key)
+        if not p or not p.slot or not p.patient_id:
+            return {"status": "failed", "error": "patient not identified or no slot chosen"}
+        if p.status == BookingStatus.BOOKED.value:
+            return {"status": "booked", "appointment_id": p.appointment_id, "note": "already booked, nothing done"}
+        p.idempotency_key = p.idempotency_key or make_key(s.call_id, p.key, p.slot, p.attempts)
+        s.pending_tools.append("book_appointment")
+        t0 = time.time()
+        try:
+            out = await reliable_book(self.t, s.call_id, p.patient_id, p.slot, p.idempotency_key, pause=self.book_pause)
+        finally:
+            s.pending_tools.remove("book_appointment")
+        for e in out.events:
+            self.log.event(e.pop("event"), level="warn" if "unknown" in str(e) or "gave_up" in str(e) else "info", patient=p.key, **e)
+        p.status = out.status
+        if out.status == "booked":
+            p.appointment_id = out.appointment_id
+            self.last_tool_error = False
+            res = {"status": "booked", "appointment_id": out.appointment_id, "start": out.start}
+        elif out.status == "failed":
+            p.attempts += 1                      # new key only after a CONFIRMED failure
+            p.idempotency_key, p.slot, p.last_error = "", "", out.error
+            self.last_tool_error = True
+            self.log.event("book_failed", level="error", patient=p.key, error=out.error)
+            res = {"status": "failed", "error": out.error, "alternatives": out.alternatives,
+                   "say": "It did not go through. Offer the alternative slots or a transfer."}
+        else:
+            self.last_tool_error = True
+            self.log.event("book_pending", level="error", patient=p.key)
+            res = {"status": "pending", "say": "Say you are still confirming this visit. Do NOT say it is booked. Offer a transfer or a callback."}
+        res["ms"] = round((time.time() - t0) * 1000)
+        return res
+
+    async def read_back_summary(self):
+        s = self.state
+        s.readback_done = True
+        lines = []
+        for p in s.active_patients():
+            if p.status == BookingStatus.BOOKED.value:
+                lines.append(f"{p.first_name}: booked, {p.slot}")
+            else:
+                lines.append(f"{p.first_name}: NOT booked ({p.status})")
+        return {"summary": lines}
+
+    async def request_human_transfer(self, reason):
+        s = self.state
+        failing = self.last_tool_error or any(p.status in (BookingStatus.PENDING.value, BookingStatus.FAILED.value) for p in s.patients)
+        if not (s.human_requested or failing):
+            self.log.event("transfer_declined", level="warn", reason=(reason or "")[:200])
+            return {"ok": False, "reason": "The caller did not ask for a person and nothing has failed. Do not transfer. "
+                                           "Tell the caller what is still open and keep helping."}
+        s.transfer_requested = True
+        try:
+            await self.t.transfer(s.call_id, reason)
+        except Exception:
+            self.log.event("transfer_log_failed", level="error")
+        self.log.event("transfer_requested", reason=reason)
+        return {"ok": True}
+
+    def transfer_failed(self):
+        """The transfer could not happen (no number or an error). Stop treating the call as escalated."""
+        self.state.transfer_requested = False
+        self.log.event("transfer_unavailable", level="warn")
+
+    async def leave_callback(self, note):
+        try:
+            await self.t.callback(self.state.call_id, note)
+        except Exception:
+            self.log.event("callback_log_failed", level="error")
+        return {"ok": True}
+
+    def agent_said_goodbye(self):
+        self.state.agent_goodbye_said = True
+
+    def end_call_check(self):
+        d = guards.can_end_call(self.state)
+        self.log.event("end_call_check", allowed=d.allowed, reason=d.reason)
+        if d.allowed:
+            self.state.ended = True
+        return d

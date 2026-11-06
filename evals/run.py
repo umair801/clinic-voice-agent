@@ -1,0 +1,416 @@
+"""Orchestration evals. LABEL: these run the REAL core (state, guards, language, routing, retrieval, backend,
+idempotent booking) with a deterministic STUB MODEL standing in for the LLM. They prove the rails hold.
+They do NOT measure LLM wording, voice latency, or cost. Those need real calls (see docs/BEFORE_AFTER.md).
+
+Run:  python -c "from evals.run import main; main()"
+"""
+import asyncio
+import json
+import os
+import tempfile
+
+from ava import guards, language
+from ava.backend.booking import BookingService, Fault
+from ava.backend.client import InProcessTransport
+from ava.backend.store import SQLiteStore
+from ava.core import AvaCore
+from ava.output_guard import violations
+from ava.retrieval import KnowledgeBase
+from ava.router import route
+from ava.state import BookingStatus, CallState, Step
+from ava.telemetry import CallLogger
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FAMILY = [("self", "Maria", "1982-03-14"), ("child1", "Lucas", "2013-06-02"), ("child2", "Sofia", "2016-09-21")]
+KB = KnowledgeBase()
+
+
+def make(fault=None, call_id="eval"):
+    st = SQLiteStore()
+    tr = InProcessTransport(BookingService(st, fault or Fault()))
+    d = tempfile.mkdtemp()
+    core = AvaCore(call_id, tr, kb=KB, logger=CallLogger(call_id, log_dir=d, alert_webhook=""), book_pause=0)
+    core.mark_greeted()
+    return core, st
+
+
+class StubModel:
+    """Stateless on purpose: it reads ONLY core.state (like a fallback model would) and does the next action."""
+    name = "stub"
+
+    async def act(self, core):
+        s = core.state
+        step = s.step
+        if step == Step.IDENTIFY:
+            k, f, d = FAMILY[0]
+            await core.identify_patient(k, f, d)
+        elif step == Step.COLLECT_PATIENTS:
+            if not s.expected_party_size:
+                await core.set_party_size(len(FAMILY))
+            for k, f, d in FAMILY:
+                p = s.patient(k)
+                if not p or not p.identified():
+                    await core.identify_patient(k, f, d)
+                    return step
+        elif step == Step.CHOOSE_SLOT:
+            slots = (await core.find_slots("pediatrics family", 6))["slots"]
+            used = {p.slot for p in s.patients if p.slot}
+            free = [x for x in slots if x["slot_id"] not in used]
+            for p in s.active_patients():
+                if not p.slot and p.status == BookingStatus.NONE.value:
+                    await core.choose_slot(p.key, free.pop(0)["slot_id"])
+                    return step
+        elif step == Step.BOOK:
+            await core.book_appointment(s.needs_booking()[0].key)
+        elif step == Step.CONFIRM:
+            await core.read_back_summary()
+        return step
+
+
+async def run_to_wrapup(core, model=None, max_steps=40, swap_at=None, models=None):
+    model = model or StubModel()
+    seen = []
+    for i in range(max_steps):
+        if swap_at is not None and i == swap_at and models:
+            model = models  # fresh model object: nothing carried over except core.state
+        step = await model.act(core)
+        seen.append(step.value)
+        if core.state.step == Step.WRAP_UP:
+            break
+    return seen
+
+
+# ---------------------------------------------------------------- scenarios
+async def s_family_with_lost_response():
+    core, st = make(Fault(commit_then_timeout=1))
+    await run_to_wrapup(core)
+    rows = st.all_appointments()
+    pats = sorted(r["patient_id"] for r in rows)
+    ok = pats == ["pt_1001", "pt_1002", "pt_1003"] and len(core.state.booked()) == 3
+    return ok, f"appointments for {pats}"
+
+
+async def s_replay_of_bad_call_pattern():
+    """The task's bad call: book times out, agent must not say booked, retry must not duplicate, children must be booked."""
+    core, st = make(Fault(commit_then_timeout=1))
+    core.state.add_patient("self", "Maria", "1982-03-14")
+    await core.identify_patient("self", "Maria", "1982-03-14")
+    await core.set_party_size(3)
+    for k, f, d in FAMILY[1:]:
+        await core.identify_patient(k, f, d)
+    sl = (await core.find_slots("pediatrics", 3))["slots"]
+    for (k, _, _), s in zip(FAMILY, sl):
+        await core.choose_slot(k, s["slot_id"])
+    first = await core.book_appointment("self")
+    parent_rows = [r for r in st.all_appointments() if r["patient_id"] == "pt_1001"]
+    for k in ("child1", "child2"):
+        await core.book_appointment(k)
+    by_patient = {}
+    for r in st.all_appointments():
+        by_patient[r["patient_id"]] = by_patient.get(r["patient_id"], 0) + 1
+    ok = first["status"] == "booked" and len(parent_rows) == 1 and by_patient == {"pt_1001": 1, "pt_1002": 1, "pt_1003": 1}
+    return ok, f"first status {first['status']} (reconciled), rows per patient {by_patient}"
+
+
+async def s_timeout_before_commit():
+    core, st = make(Fault(timeout_before_commit=1))
+    await run_to_wrapup(core)
+    return len(st.all_appointments()) == 3, f"{len(st.all_appointments())} rows"
+
+
+async def s_outage_never_says_booked():
+    core, st = make(Fault(timeout_before_commit=999))
+    await run_to_wrapup(core, max_steps=12)
+    pend = core.state.pending_patients()
+    bad = violations(core.state, "Great, you're all booked!")
+    ok = not core.state.booked() and len(pend) >= 1 and len(st.all_appointments()) == 0 and bool(bad)
+    return ok, f"pending={[p.key for p in pend]} claim flagged={bool(bad)}"
+
+
+async def s_pending_retry_same_key_no_dup():
+    core, st = make(Fault(timeout_before_commit=999))
+    await run_to_wrapup(core, max_steps=14)
+    key1 = core.state.patient("self").idempotency_key
+    assert key1 and core.state.patient("self").status == "pending", "precondition: booking attempted and left pending"
+    core.t.svc.fault.timeout_before_commit = 0  # backend recovers
+    await core.book_appointment("self")
+    p = core.state.patient("self")
+    return p.status == "booked" and p.idempotency_key == key1 and len(st.all_appointments()) == 1, f"key reused={p.idempotency_key == key1}"
+
+
+async def s_slot_conflict_then_rebook():
+    core, st = make()
+    await core.identify_patient("self", "Maria", "1982-03-14")
+    sl = (await core.find_slots("family", 3))["slots"]
+    st.db.execute("UPDATE slots SET taken_by='someone_else' WHERE slot_id=?", (sl[0]["slot_id"],)); st.db.commit()
+    await core.choose_slot("self", sl[0]["slot_id"])
+    r = await core.book_appointment("self")
+    await core.choose_slot("self", r["alternatives"][0]["slot_id"])
+    r2 = await core.book_appointment("self")
+    return r["status"] == "failed" and r2["status"] == "booked" and len(st.all_appointments()) == 1, f"{r['status']} then {r2['status']}"
+
+
+async def s_double_book_call_no_dup():
+    core, st = make()
+    await run_to_wrapup(core)
+    await core.book_appointment("self")
+    await core.book_appointment("self")
+    return len(st.all_appointments()) == 3, f"{len(st.all_appointments())} rows after repeat calls"
+
+
+async def s_unknown_patient():
+    core, _ = make()
+    r = await core.identify_patient("self", "Zed", "1999-01-01")
+    return r["found"] is False and core.state.step == Step.IDENTIFY, "stays on identify, no crash"
+
+
+async def s_identify_backend_down():
+    core, _ = make()
+    async def boom(*a, **k): raise RuntimeError("down")
+    core.t.identify = boom
+    r = await core.identify_patient("self", "Maria", "1982-03-14")
+    return r["found"] is False and "error" in r and core.last_tool_error, "error surfaced, large model routed next"
+
+
+def _lang(*texts, start="en"):
+    s = CallState(call_id="l"); s.language = start
+    for t in texts:
+        language.observe(s, t)
+    return s.language
+
+
+async def s_lang_si_stays_english():
+    return _lang("Sí", "Sí, that works") == "en", "single 'Sí' and 'Sí, that works' stay English"
+
+
+async def s_lang_name_stays_english():
+    return _lang("My name is José Álvarez", "Álvarez, Maria", "Alvarez") == "en", "Spanish names stay English"
+
+
+async def s_lang_real_spanish_switches():
+    return _lang("Hola, quiero una cita para mi hijo") == "es", "full Spanish sentence switches"
+
+
+async def s_lang_explicit_both_ways():
+    a = _lang("Spanish please")
+    b = _lang("English, please", start="es")
+    return a == "es" and b == "en", f"{a}, {b}"
+
+
+async def s_end_call_blocked_mid_booking():
+    core, _ = make()
+    await core.identify_patient("self", "Maria", "1982-03-14")
+    await core.set_party_size(3)
+    core.state.caller_goodbye = True; core.state.agent_goodbye_said = True
+    d = core.end_call_check()
+    return (not d.allowed) and not core.state.ended, d.reason
+
+
+async def s_end_call_needs_goodbye():
+    core, _ = make()
+    await run_to_wrapup(core)
+    d = core.end_call_check()
+    return not d.allowed, d.reason
+
+
+async def s_end_call_after_goodbye_ok():
+    core, _ = make()
+    await run_to_wrapup(core)
+    core.on_user_turn("No, that's all, thank you. Goodbye.")
+    core.agent_said_goodbye()
+    d = core.end_call_check()
+    return d.allowed and core.state.ended, d.reason
+
+
+async def s_wait_my_son_not_goodbye():
+    core, _ = make()
+    await run_to_wrapup(core)
+    core.on_user_turn("No, wait, my son too")
+    return not core.state.caller_goodbye, "continuation phrase is not a goodbye"
+
+
+async def s_silence_policy():
+    core, _ = make()
+    a = guards.silence_action(core.state, 3)
+    b = guards.silence_action(core.state, 9)
+    await core.identify_patient("self", "Maria", "1982-03-14"); await core.set_party_size(3)
+    core.state.silence_prompts_sent = 2
+    c = guards.silence_action(core.state, 60)
+    return (a, b, c) == ("wait", "reprompt", "handoff"), f"{a}, {b}, {c} (pending work is handed off, never dropped)"
+
+
+async def s_fallback_resumes_same_step():
+    core, st = make()
+    m1 = StubModel()
+    for _ in range(4):
+        await m1.act(core)
+    step_before = core.state.step
+    m2 = StubModel()  # a brand new model object with no memory, like a fallback model
+    await m2.act(core)
+    await run_to_wrapup(core, model=m2)
+    ok = step_before in (Step.COLLECT_PATIENTS, Step.CHOOSE_SLOT, Step.BOOK) and len(st.all_appointments()) == 3
+    return ok, f"swapped at step {step_before.value}; finished with {len(st.all_appointments())} appointments, none skipped"
+
+
+async def s_instruction_identical_for_any_model():
+    core, _ = make()
+    await core.identify_patient("self", "Maria", "1982-03-14")
+    return core.state.instruction() == CallState.from_json(core.state.to_json()).instruction(), "instruction rebuilds identically from saved state"
+
+
+async def s_prompt_small_and_retrieval_tiny():
+    prompt = open(os.path.join(ROOT, "prompts", "system.md")).read()
+    r = KB.format(KB.find_providers("my son needs a checkup", k=3))
+    return len(prompt) < 20000 and len(prompt) < 3000 and len(r) < 1000, f"prompt {len(prompt)} chars, retrieval result {len(r)} chars"
+
+
+async def s_retrieval_correct():
+    r = KB.find_providers("my son needs a checkup", k=3)
+    city = KB.find_providers("cardiology", k=3, city="Riverton")
+    ok = r and r[0]["specialty"] in ("Pediatrics", "Family Medicine") and all(KB.location(p["location_id"])["city"] == "Riverton" for p in city)
+    return bool(ok), f"top={r[0]['specialty'] if r else None}"
+
+
+async def s_routing():
+    s = CallState(call_id="r"); s.greeted = True
+    a = route(s, "hello")[0]
+    b = route(s, "I want a real person")[0]
+    s.add_patient("self", "Maria", "1982-03-14").status = "pending"
+    c = route(s, "ok")[0]
+    d = route(CallState(call_id="x"), "hi", last_tool_error=True)[0]
+    return (a, b, c, d) == ("small", "large", "large", "large"), f"{a},{b},{c},{d}"
+
+
+async def s_routing_share_in_family_call():
+    core, _ = make()
+    tiers = []
+    for _ in range(14):
+        tiers.append(core.on_user_turn("ok")["tier"])
+        await StubModel().act(core)
+    share = tiers.count("small") / len(tiers)
+    return share >= 0.5, f"small-model share {share:.0%} of turns in a clean family call (stub-driven, routing only)"
+
+
+async def s_output_guard_allows_truth():
+    core, _ = make()
+    await run_to_wrapup(core)
+    ok_text = "Maria, Lucas and Sofia are booked."
+    return violations(core.state, ok_text) == [], "true claim passes"
+
+
+async def s_call_log_and_replay():
+    core, _ = make(Fault(commit_then_timeout=1))
+    await run_to_wrapup(core)
+    from ava.telemetry import read_call, summarize
+    rows = read_call(core.log.path)
+    names = {r.get("event") for r in rows}
+    return "book_unknown_outcome" in names and "reconcile" in names and summarize(rows) != {}, f"events logged: {sorted(n for n in names if n)}"
+
+
+async def s_release_gate_hash():
+    from ava.release import _sha
+    p = os.path.join(ROOT, "config", "agent.json")
+    cfg = json.load(open(p))
+    ok = os.path.exists(os.path.join(ROOT, cfg["prompt_file"])) and len(_sha(p)) == 16
+    return ok, f"config version {cfg['version']} references an in-repo prompt"
+
+
+async def _guard_stream(state, text, step=7):
+    from ava.output_guard import SentenceGuard
+    blocked = []
+    g = SentenceGuard(state, on_block=lambda v, sent: blocked.append(sent))
+    out = "".join(g.feed(text[i:i + step]) for i in range(0, len(text), step)) + g.flush()
+    return out, blocked
+
+
+async def s_real_call_premature_claim_blocked():
+    # From real test call 2: the model said "you're set" after choose_slot, before book_appointment confirmed.
+    core, _ = make()
+    await core.identify_patient("self", "Maria", "1982-03-14")
+    slot = (await core.find_slots("pediatrics", 3))["slots"][0]["slot_id"]
+    await core.choose_slot("self", slot)
+    text = "Maria, you're set for November 12 at 9:00 AM. Lucas can have the next opening. Does that work for him?"
+    out, blocked = await _guard_stream(core.state, text)
+    ok = len(blocked) == 1 and "you're set" not in out and "Lucas can have the next opening." in out and out.endswith("for him?")
+    return ok, f"spoken text: {out!r}"
+
+
+async def s_real_call_true_statements_not_blocked():
+    # From real test call 2: these true sentences were wrongly flagged by the first version of the detector.
+    core, _ = make()
+    await core.identify_patient("self", "Maria", "1982-03-14")
+    await core.identify_patient("child1", "Lucas", "2013-06-02")
+    await core.identify_patient("child2", "Sofia", "2016-09-21")
+    slot = (await core.find_slots("pediatrics", 3))["slots"][0]["slot_id"]
+    await core.choose_slot("self", slot)
+    await core.book_appointment("self")
+    texts = ["Thanks, Maria. Your visit is booked for November 12 at 9:00 AM. Lucas and Sofia still don't have visits. Want me to book them now?",
+             "I could not transfer you right now. Your own checkup is bookedfor November 12 at 9:00 AM."]
+    res = [await _guard_stream(core.state, t) for t in texts]
+    wrong = await _guard_stream(core.state, "You're all set! Everyone is booked.")
+    ok = all(not b for _, b in res) and len(wrong[1]) == 2
+    return ok, f"true statements blocked: {sum(len(b) for _, b in res)}; false 'everyone' claims blocked: {len(wrong[1])}/2"
+
+
+async def s_end_call_refusal_does_not_invite_transfer():
+    # From real test call 2: "finish or hand off" made the model transfer a caller who never asked for a person.
+    core, _ = make()
+    await core.identify_patient("self", "Maria", "1982-03-14")
+    await core.set_party_size(3)
+    core.state.caller_goodbye = True; core.state.agent_goodbye_said = True
+    d = core.end_call_check()
+    ok = (not d.allowed) and "hand off" not in d.reason and "Do NOT transfer" in d.reason and "Maria" in d.reason
+    return ok, d.reason
+
+
+async def s_transfer_needs_a_reason_and_does_not_stick():
+    core, _ = make()
+    await core.identify_patient("self", "Maria", "1982-03-14")
+    r1 = await core.request_human_transfer("end call was refused")
+    core.on_user_turn("Can I talk to a real person please")
+    r2 = await core.request_human_transfer("caller asked")
+    core.transfer_failed()
+    tier = route(core.state, "ok")[0]
+    c2, _ = make()
+    c2.on_user_turn("Quiero hablar con una persona")
+    ok = (not r1["ok"]) and r2["ok"] and tier == "small" and c2.state.human_requested
+    return ok, f"unasked transfer declined={not r1['ok']}, asked transfer allowed={r2['ok']}, tier after failed transfer={tier}"
+
+
+async def s_fault_env_slow_lookup():
+    import time
+    old = os.environ.get("FAULT_IDENTIFY_DELAY_S")
+    os.environ["FAULT_IDENTIFY_DELAY_S"] = "0.2"
+    try:
+        f = Fault.from_env()
+        svc = BookingService(SQLiteStore(), f)
+        t0 = time.time(); svc.identify("Maria", "1982-03-14"); dt = time.time() - t0
+    finally:
+        os.environ.pop("FAULT_IDENTIFY_DELAY_S", None) if old is None else os.environ.__setitem__("FAULT_IDENTIFY_DELAY_S", old)
+    return f.active() and dt >= 0.2 and not Fault.from_env().active(), f"slow lookup injected via env: {dt:.2f}s; default is off"
+
+
+SCENARIOS = [(n[2:], f) for n, f in list(globals().items()) if n.startswith("s_") and callable(f)]
+
+
+def run_all(verbose=True):
+    results = []
+    for name, fn in SCENARIOS:
+        try:
+            ok, detail = asyncio.run(fn())
+        except Exception as e:  # a crash is a failure
+            ok, detail = False, f"EXCEPTION {type(e).__name__}: {e}"
+        results.append({"name": name, "passed": bool(ok), "detail": detail})
+        if verbose:
+            print(f"{'PASS' if ok else 'FAIL'}  {name}: {detail}")
+    return results
+
+
+def main():
+    res = run_all()
+    n = sum(r["passed"] for r in res)
+    print(f"\n{n}/{len(res)} orchestration evals passed (stub model; see module docstring)")
+    os.makedirs(os.path.join(ROOT, "results"), exist_ok=True)
+    json.dump({"label": "orchestration evals, stub model", "passed": n, "total": len(res), "results": res},
+              open(os.path.join(ROOT, "results", "evals.json"), "w"), indent=2)
+    return n == len(res)

@@ -35,7 +35,9 @@ The test phone line is shared with reviewers on request.
 
 ## Links
 
-Live demo: TO ADD after deploy. GitHub: TO ADD. Loom: TO ADD.
+Live demo: https://clinic.datawebify.com
+GitHub: https://github.com/umair801/clinic-voice-agent
+Loom: TO ADD
 
 ## How it is built
 

@@ -25,11 +25,12 @@ FAMILY = [("self", "Maria", "1982-03-14"), ("child1", "Lucas", "2013-06-02"), ("
 KB = KnowledgeBase()
 
 
-def make(fault=None, call_id="eval"):
+def make(fault=None, call_id="eval", strict_turns=False):
     st = SQLiteStore()
     tr = InProcessTransport(BookingService(st, fault or Fault()))
     d = tempfile.mkdtemp()
-    core = AvaCore(call_id, tr, kb=KB, logger=CallLogger(call_id, log_dir=d, alert_webhook=""), book_pause=0)
+    core = AvaCore(call_id, tr, kb=KB, logger=CallLogger(call_id, log_dir=d, alert_webhook=""), book_pause=0,
+                   one_booking_per_turn=strict_turns)
     core.mark_greeted()
     return core, st
 
@@ -389,6 +390,58 @@ async def s_fault_env_slow_lookup():
         os.environ.pop("FAULT_IDENTIFY_DELAY_S", None) if old is None else os.environ.__setitem__("FAULT_IDENTIFY_DELAY_S", old)
     return f.active() and dt >= 0.2 and not Fault.from_env().active(), f"slow lookup injected via env: {dt:.2f}s; default is off"
 
+
+
+async def _family_ready(strict=True):
+    core, st = make(strict_turns=strict)
+    await core.set_party_size(3)
+    for k, f, d in FAMILY:
+        await core.identify_patient(k, f, d)
+    sl = (await core.find_slots("pediatrics", 6))["slots"]
+    for (k, _, _), s in zip(FAMILY, sl):
+        await core.choose_slot(k, s["slot_id"])
+    return core, st
+
+
+async def s_real_call_book_only_with_callers_yes():
+    """Simulated call: the agent asked 'Should Sofia have 9:00?' and booked two people in the same reply. Now it is stopped."""
+    core, st = await _family_ready()
+    core.on_user_turn("Yes, that is all correct. Thank you.")      # 'all correct' must not unlock multi-booking
+    a = await core.book_appointment("self")
+    b = await core.book_appointment("child2")                      # same reply, no new caller yes
+    blocked = [e for e in __import__("ava.telemetry", fromlist=["read_call"]).read_call(core.log.path) if e.get("event") == "book_blocked_needs_caller_yes"]
+    ok = a["status"] == "booked" and b["status"] == "not_booked" and len(st.all_appointments()) == 1 and len(blocked) == 1
+    core.on_user_turn("Yes, book Sofia too.")
+    c = await core.book_appointment("child2")
+    ok = ok and c["status"] == "booked" and len(st.all_appointments()) == 2
+    return ok, f"first {a['status']}, same-turn second {b['status']}, after caller yes {c['status']}, rows {len(st.all_appointments())}"
+
+
+async def s_caller_asks_for_everyone_together():
+    core, st = await _family_ready()
+    core.on_user_turn("Please book all three of us at those times.")
+    out = [(await core.book_appointment(k))["status"] for k, _, _ in FAMILY]
+    return out == ["booked"] * 3 and len(st.all_appointments()) == 3, f"statuses {out}"
+
+
+async def s_same_person_retry_in_one_turn_allowed():
+    core, st = await _family_ready()
+    core.on_user_turn("Yes please.")
+    a = await core.book_appointment("self")
+    b = await core.book_appointment("self")                        # repeat for the same person is not a new booking
+    return a["status"] == "booked" and b["status"] == "booked" and len(st.all_appointments()) == 1, f"{a['status']}, {b['status']}"
+
+
+async def s_family_flow_works_with_turn_rule():
+    """Normal flow: a caller turn before every step. The new rail must not get in the way."""
+    core, st = make(strict_turns=True)
+    model = StubModel()
+    for _ in range(40):
+        core.on_user_turn("yes please")
+        await model.act(core)
+        if core.state.step == Step.WRAP_UP:
+            break
+    return len(core.state.booked()) == 3 and len(st.all_appointments()) == 3, f"booked {len(core.state.booked())}, rows {len(st.all_appointments())}"
 
 SCENARIOS = [(n[2:], f) for n, f in list(globals().items()) if n.startswith("s_") and callable(f)]
 

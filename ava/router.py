@@ -10,6 +10,9 @@ FRUSTRATION = re.compile(r"\b(this is ridiculous|frustrated|useless|human|real p
                          r"you('re| are) not (listening|understanding)|what the hell|stupid)\b", re.I)
 
 
+# The caller asked for several people to be booked together, so more than one booking in a single turn is allowed.
+MULTI_BOOKING_OK = re.compile(r"(\ball (three|of us|of them|four|the appointments)\b|\b(everyone|everybody|both|together|each of us|the three of us)\b|"
+                              r"\b(todos|todas|los tres|las tres|juntos|juntas)\b)", re.I)
 HUMAN_REQUEST = re.compile(r"(\b(real person|human|operator|representative)\b|(talk|speak|transfer me)\s+(to|with)\s+(a |an )?(person|someone|somebody|agent)|"
                            r"una persona|hablar con alguien|un humano)", re.I)
 

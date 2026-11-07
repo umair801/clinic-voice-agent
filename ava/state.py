@@ -64,6 +64,8 @@ class CallState:
     agent_goodbye_said: bool = False
     transfer_requested: bool = False
     human_requested: bool = False               # the caller asked for a person
+    books_this_turn_keys: list = field(default_factory=list)   # people booked since the caller last spoke
+    multi_booking_ok: bool = False              # the caller said to book everyone together this turn
     ended: bool = False
     turn_count: int = 0
     non_english_streak: int = 0
@@ -173,11 +175,15 @@ class CallState:
         elif s == Step.CHOOSE_SLOT:
             lines.append("Offer slots with find_slots and let the caller choose one slot per person. After the caller picks a slot "
                          "for someone, call choose_slot, then book_appointment for that person. A chosen slot is NOT a booking: "
-                         "never say booked, set, scheduled or confirmed until book_appointment returns status 'booked'.")
+                         "never say booked, set, scheduled or confirmed until book_appointment returns status 'booked'. "
+                         "Offer a time for ONE person at a time and wait for the caller's yes before booking that person. "
+                         "Never change a person's time without the caller's yes. If you asked the caller a question, "
+                         "stop and wait for the answer before any tool call.")
         elif s == Step.BOOK:
             nxt = self.needs_booking()[0]
             lines.append(f"Call book_appointment for patient key '{nxt.key}' now. Book ONE patient at a time. "
-                         "Never retry by calling for the same person with a new request; the tool handles safe retries.")
+                         "Never retry by calling for the same person with a new request; the tool handles safe retries. "
+                         "Only book a person whose time the caller has just agreed to.")
         elif s in (Step.CONFIRM, Step.WRAP_UP):
             if s == Step.CONFIRM:
                 lines.append("Call read_back_summary and read its result to the caller. Then ask if there is anything else.")

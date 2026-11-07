@@ -9,13 +9,13 @@ from ava import guards, language
 from ava.backend.booking import make_key
 from ava.backend.reliable import reliable_book
 from ava.retrieval import KnowledgeBase
-from ava.router import HUMAN_REQUEST, route
+from ava.router import HUMAN_REQUEST, MULTI_BOOKING_OK, route
 from ava.state import BookingStatus, CallState, Step
 from ava.telemetry import CallLogger
 
 
 class AvaCore:
-    def __init__(self, call_id, transport, kb=None, logger=None, state=None, book_pause=0.3):
+    def __init__(self, call_id, transport, kb=None, logger=None, state=None, book_pause=0.3, one_booking_per_turn=True):
         self.state = state or CallState(call_id=call_id)
         self.t = transport
         self.kb = kb or KnowledgeBase()
@@ -23,6 +23,7 @@ class AvaCore:
         self.book_pause = book_pause
         self.last_tool_error = False
         self.last_user_text = ""
+        self.one_booking_per_turn = one_booking_per_turn
 
     # ---- per-turn hook: runs BEFORE the model sees the turn ---------------
     def on_user_turn(self, text):
@@ -34,6 +35,8 @@ class AvaCore:
             self.log.event("language_switch", to=dec.language, reason=dec.reason)
         s.caller_goodbye = guards.detect_goodbye(text, s.step == Step.WRAP_UP)
         s.silence_prompts_sent = 0
+        s.books_this_turn_keys = []
+        s.multi_booking_ok = bool(MULTI_BOOKING_OK.search(text or ""))
         if HUMAN_REQUEST.search(text or ""):
             s.human_requested = True
         tier, reason = route(s, text, self.last_tool_error)
@@ -89,7 +92,11 @@ class AvaCore:
                 "say": "Slot noted. This is NOT a booking yet. Call book_appointment for this person before saying anything is booked."}
 
     async def find_provider(self, query, city=""):
-        provs = self.kb.find_providers(query, k=2, city=city or None)
+        # Doctors who are accepting new patients come first; others only fill the list if needed.
+        provs = self.kb.find_providers(query, k=2, city=city or None, new_patients=True)
+        if len(provs) < 2:
+            seen = {p["id"] for p in provs}
+            provs += [p for p in self.kb.find_providers(query, k=2, city=city or None) if p["id"] not in seen][: 2 - len(provs)]
         return {"providers": self.kb.format(provs)}
 
     async def book_appointment(self, key):
@@ -99,6 +106,15 @@ class AvaCore:
             return {"status": "failed", "error": "patient not identified or no slot chosen"}
         if p.status == BookingStatus.BOOKED.value:
             return {"status": "booked", "appointment_id": p.appointment_id, "note": "already booked, nothing done"}
+        # One booking per caller turn unless the caller asked for everyone together. A model that asks a question and
+        # then books on its own is stopped here, so no visit is made or changed without the caller's yes.
+        if (self.one_booking_per_turn and s.books_this_turn_keys and p.key not in s.books_this_turn_keys
+                and not s.multi_booking_ok):
+            self.log.event("book_blocked_needs_caller_yes", level="warn", patient=p.key, already=list(s.books_this_turn_keys))
+            return {"status": "not_booked", "error": "needs the caller's yes first",
+                    "say": "Do not book this person yet. Tell the caller the time you propose for this person and wait for their yes."}
+        if p.key not in s.books_this_turn_keys:
+            s.books_this_turn_keys.append(p.key)
         p.idempotency_key = p.idempotency_key or make_key(s.call_id, p.key, p.slot, p.attempts)
         s.pending_tools.append("book_appointment")
         t0 = time.time()

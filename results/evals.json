@@ -1,7 +1,7 @@
 {
   "label": "orchestration evals, stub model",
-  "passed": 32,
-  "total": 32,
+  "passed": 36,
+  "total": 36,
   "results": [
     {
       "name": "family_with_lost_response",
@@ -106,7 +106,7 @@
     {
       "name": "prompt_small_and_retrieval_tiny",
       "passed": true,
-      "detail": "prompt 1084 chars, retrieval result 359 chars"
+      "detail": "prompt 1313 chars, retrieval result 359 chars"
     },
     {
       "name": "retrieval_correct",
@@ -136,7 +136,7 @@
     {
       "name": "release_gate_hash",
       "passed": true,
-      "detail": "config version 1.0.0 references an in-repo prompt"
+      "detail": "config version 1.0.2 references an in-repo prompt"
     },
     {
       "name": "real_call_premature_claim_blocked",
@@ -162,6 +162,26 @@
       "name": "fault_env_slow_lookup",
       "passed": true,
       "detail": "slow lookup injected via env: 0.20s; default is off"
+    },
+    {
+      "name": "real_call_book_only_with_callers_yes",
+      "passed": true,
+      "detail": "first booked, same-turn second not_booked, after caller yes booked, rows 2"
+    },
+    {
+      "name": "caller_asks_for_everyone_together",
+      "passed": true,
+      "detail": "statuses ['booked', 'booked', 'booked']"
+    },
+    {
+      "name": "same_person_retry_in_one_turn_allowed",
+      "passed": true,
+      "detail": "booked, booked"
+    },
+    {
+      "name": "family_flow_works_with_turn_rule",
+      "passed": true,
+      "detail": "booked 3, rows 3"
     }
   ]
 }

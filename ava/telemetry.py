@@ -127,6 +127,10 @@ def summarize(rows):
     if not rows:
         return {}
     t0, t1 = min(r["ts"] for r in rows), max(r["ts"] for r in rows)
+    # The call ends when the line drops, not when the worker finishes shutting down (that can be 20s+ later).
+    ends = [e["ts"] for e in events if e.get("event") in ("participant_left", "session_close", "room_disconnected", "silence_close")]
+    if ends:
+        t1 = min(t1, max(min(ends), max([r["ts"] for r in turns] or [t0])))
     minutes = max((t1 - t0) / 60.0, 1e-9)
     cost = sum(r.get("cost_usd", 0.0) for r in turns)
     lat = [r["response_latency_s"] for r in turns if r.get("response_latency_s")]

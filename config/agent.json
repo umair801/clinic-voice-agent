@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "prompt_file": "prompts/system.md",
   "models": {
     "small": "claude-haiku-5-5",
@@ -22,7 +22,7 @@
     "endpointing_min_delay": 0.4,
     "endpointing_max_delay": 2.0,
     "interruption_mode": "adaptive",
-    "preemptive_generation": true,
+    "preemptive_generation": false,
     "min_interruption_words": 1
   },
   "silence": {

@@ -11,6 +11,8 @@ from dataclasses import dataclass, asdict, field
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PRICING_PATH = os.path.join(ROOT, "config", "pricing.json")
+STDOUT_LOGS = os.environ.get("CALLLOG_STDOUT") == "1" or any(
+    os.environ.get(k) for k in ("RAILWAY_ENVIRONMENT_NAME", "RAILWAY_ENVIRONMENT", "RAILWAY_PROJECT_ID"))
 LOG_DIR = os.environ.get("CALL_LOG_DIR", os.path.join(ROOT, "logs", "calls"))
 
 
@@ -70,8 +72,13 @@ class CallLogger:
         self.alert_webhook = alert_webhook if alert_webhook is not None else os.environ.get("ALERT_WEBHOOK_URL", "")
 
     def _write(self, obj):
+        line = json.dumps(obj)
         with open(self.path, "a") as f:
-            f.write(json.dumps(obj) + "\n")
+            f.write(line + "\n")
+        if STDOUT_LOGS:
+            # On Railway the disk is wiped on redeploy, so each row is also printed. Download the service logs
+            # and rebuild the call files with scripts/import_railway_logs.py.
+            print("CALLLOG " + line, flush=True)
 
     def turn(self, rec: TurnRecord):
         if not rec.cost_usd and rec.tier and (rec.prompt_tokens or rec.completion_tokens):

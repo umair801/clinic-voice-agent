@@ -7,6 +7,7 @@ STEPS = [
     ("orchestration evals", "import sys; from evals.run import main; sys.exit(0 if main() else 1)"),
     ("modeled cost", "from harness.cost_model import main; main()"),
     ("voice adapter (needs livekit)", "from tests.voice_adapter import main; main()"),
+    ("railway log import", "from tests.log_import import main; main()"),
 ]
 
 def main():

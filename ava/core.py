@@ -89,7 +89,7 @@ class AvaCore:
                 "say": "Slot noted. This is NOT a booking yet. Call book_appointment for this person before saying anything is booked."}
 
     async def find_provider(self, query, city=""):
-        provs = self.kb.find_providers(query, k=3, city=city or None)
+        provs = self.kb.find_providers(query, k=2, city=city or None)
         return {"providers": self.kb.format(provs)}
 
     async def book_appointment(self, key):

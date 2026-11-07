@@ -9,6 +9,7 @@ Every latency and cost number must come from real test calls (see docs/RUNBOOK.m
 import json
 import logging
 import os
+import re
 import time
 import uuid
 
@@ -34,6 +35,15 @@ server = AgentServer()
 GREETING = {"en": "Thank you for calling. This is Ava. How can I help you today?",
             "es": "Gracias por llamar. Soy Ava. ¿En qué le puedo ayudar?"}
 FILLER = {"en": "One moment while I look that up.", "es": "Un momento mientras lo busco."}
+# Spoken the moment a reply turns to a tool call and nothing has been said yet. The wait on live calls is the model
+# (2 to 3 model calls per reply), not the tool, so a timer inside the tool never fires.
+LOOKUP_FILLER = {"en": "One moment while I look that up.", "es": "Un momento mientras lo busco."}
+BOOK_FILLER = {"en": "One moment while I book that.", "es": "Un momento mientras lo reservo."}
+SHORT_FILLER = {"en": "One moment.", "es": "Un momento."}
+FILLER_BY_TOOL = {"identify_patient": LOOKUP_FILLER, "find_slots": LOOKUP_FILLER, "find_provider": LOOKUP_FILLER,
+                  "book_appointment": BOOK_FILLER, "set_party_size": SHORT_FILLER, "choose_slot": SHORT_FILLER,
+                  "decline_patient": SHORT_FILLER}   # read_back_summary, end_call, request_human_transfer: no filler
+GOODBYE_WORDS = re.compile(r"\b(good\s?bye|bye|adi[oó]s|take care|have a (great|good|nice|wonderful) day)\b", re.I)
 SILENCE = {"en": "Are you still there?", "es": "¿Sigue ahí?"}
 GOODBYE_LINE = {"en": "Thank you for calling. Goodbye.", "es": "Gracias por llamar. Adiós."}
 
@@ -69,11 +79,18 @@ class AvaAgent(Agent):
         self._acc = {"p": 0, "c": 0, "k": 0, "n": 0, "dur": 0.0}
         self._part, self._part_turn = 0, -1
         self.end_reason = ""
+        self._reset_reply()
+
+    def _reset_reply(self):
+        self._reply_spoke = False       # any text (model or filler) already heading to the caller in this reply
+        self._reply_text = ""           # the model's own words in this reply (not the filler)
+        self._filler_played = False
 
     # ---- runs after the caller finishes a turn, BEFORE the model replies ----
     async def on_user_turn_completed(self, turn_ctx, new_message):
         text = new_message.text_content or ""
         self.turn_started = time.time()
+        self._reset_reply()
         d = self.core.on_user_turn(text)
         self.cur_tier, self.cur_reason = d["tier"], d["route_reason"]
         await self.update_instructions(self.base_prompt + "\n\n" + d["instruction"])
@@ -91,21 +108,45 @@ class AvaAgent(Agent):
             if isinstance(chunk, str):
                 out = guard.feed(chunk)
                 if out:
+                    self._reply_spoke, self._reply_text = True, self._reply_text + out
                     yield out
             elif delta is not None and getattr(delta, "tool_calls", None):
                 tail = guard.flush()
                 if tail:
+                    self._reply_spoke, self._reply_text = True, self._reply_text + tail
                     yield tail
+                filler = self._pick_filler(delta.tool_calls)
+                if filler:
+                    self._reply_spoke = self._filler_played = True
+                    self.core.log.event("filler_spoken", text=filler.strip())
+                    yield filler
                 yield chunk
             elif delta is not None and getattr(delta, "content", None):
                 out = guard.feed(delta.content)
                 if out:
+                    self._reply_spoke, self._reply_text = True, self._reply_text + out
                     yield out
             else:
                 yield chunk
         tail = guard.flush()
         if tail:
+            self._reply_spoke, self._reply_text = True, self._reply_text + tail
             yield tail
+
+    def _pick_filler(self, tool_calls):
+        """Filler line for the first tool call of a reply, only when the model has said nothing yet."""
+        if self._reply_spoke:
+            return ""
+        names = [getattr(tc, "name", "") for tc in tool_calls]
+        if any(n in ("end_call", "request_human_transfer") for n in names):
+            return ""
+        for n in names:                                  # prefer the most informative line
+            if n in FILLER_BY_TOOL and FILLER_BY_TOOL[n] is not SHORT_FILLER:
+                return FILLER_BY_TOOL[n][self.core.state.language] + " "
+        for n in names:
+            if n in FILLER_BY_TOOL:
+                return FILLER_BY_TOOL[n][self.core.state.language] + " "
+        return ""
 
     def _record(self, name):
         self.last_tools.append(name)
@@ -197,7 +238,10 @@ class AvaAgent(Agent):
             self.core.state.agent_goodbye_said = False
             return {"ended": False, "reason": d.reason, "say": "Do not end the call. Continue helping."}
         self.end_reason = "agent_ended_call_after_goodbye"
-        await context.session.say(GOODBYE_LINE[self.core.state.language], allow_interruptions=False)
+        if GOODBYE_WORDS.search(self._reply_text):
+            await context.wait_for_playout()          # let the model's own goodbye finish; do not say a second one
+        else:
+            await context.session.say(GOODBYE_LINE[self.core.state.language], allow_interruptions=False)
         await self.ctx.api.room.delete_room(api.DeleteRoomRequest(room=self.ctx.room.name))
         return {"ended": True}
 
@@ -284,6 +328,7 @@ async def entrypoint(ctx: JobContext):
                                hook_s=round(float(um.get("on_user_turn_completed_delay") or 0.0), 3),
                                llm_ttft_s=round(float(am.get("llm_node_ttft") or 0.0), 3),
                                tts_ttfb_s=round(float(am.get("tts_node_ttfb") or 0.0), 3),
+                               filler_played=bool(getattr(agent, "_filler_played", False)),
                                prompt_tokens=int(acc["p"]), completion_tokens=int(acc["c"]), cached_tokens=int(acc["k"]),
                                llm_calls=int(acc["n"]), llm_total_s=round(float(acc["dur"]), 3), part=agent._part))
         agent.last_tools = []

@@ -1,7 +1,7 @@
 {
   "label": "orchestration evals, stub model",
-  "passed": 37,
-  "total": 37,
+  "passed": 40,
+  "total": 40,
   "results": [
     {
       "name": "family_with_lost_response",
@@ -187,6 +187,21 @@
       "name": "goodbye_with_unbooked_child_asks_once_no_goodbye",
       "passed": true,
       "detail": "instruction asks once True, guard blocked True, after decline instruction clean True, end allowed True"
+    },
+    {
+      "name": "real_call_goodbye_before_caller_goodbye_replaced",
+      "passed": true,
+      "detail": "detector [False, False, True, True]; premature replaced: True -> \"You're welcome, Maria. Is there anything else I can help you with?\"; real goodbye untouched: True"
+    },
+    {
+      "name": "tool_ms_is_measured",
+      "passed": true,
+      "detail": "identify 0.47 ms, after find_slots 1.40 ms"
+    },
+    {
+      "name": "collect_step_asks_for_parallel_calls",
+      "passed": true,
+      "detail": "step collect_patients"
     }
   ]
 }

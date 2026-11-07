@@ -14,7 +14,7 @@ from ava.state import BookingStatus
 
 CONTINUATION = re.compile(r"\b(wait|also|and my|my son|my daughter|my kid|my kids|one more|another|actually|but|hold on|"
                           r"before you|one sec|second)\b", re.I)
-GOODBYE = re.compile(r"\b(goodbye|good bye|bye|that'?s all|that is all|that'?s it|that is it|nothing else|i'?m done|"
+GOODBYE = re.compile(r"\b(goodbye|good bye|bye|that'?s all(?!\s+(?:correct|right|fine|good|okay|ok|true)\b)|that is all(?!\s+(?:correct|right|fine|good|okay|ok|true)\b)|that'?s it|that is it|nothing else|i'?m done|"
                      r"i am done|no thanks|no thank you|all set|we'?re good|we are good|adi[oó]s|eso es todo|nada m[aá]s)\b", re.I)
 BARE_NO = re.compile(r"^\s*(no|nope|nah)[\s,.!?]*(thanks|thank you|gracias)?[\s.!?]*$", re.I)
 

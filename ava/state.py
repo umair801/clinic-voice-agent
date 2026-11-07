@@ -171,7 +171,9 @@ class CallState:
             need = max(0, self.expected_party_size - len(self.patients))
             lines.append("Collect each remaining person's first name and date of birth, then call add_patient and "
                          f"identify_patient for each. Still missing details for: {missing or 'none'}; "
-                         f"{need} more people not yet added. If the party size is unknown, ask who needs an appointment.")
+                         f"{need} more people not yet added. If the party size is unknown, ask who needs an appointment. "
+                         "If the caller names several people at once, call set_party_size (everyone, caller included) and "
+                         "identify_patient for each person together in the SAME step, not one after another.")
         elif s == Step.CHOOSE_SLOT:
             lines.append("Offer slots with find_slots and let the caller choose one slot per person. After the caller picks a slot "
                          "for someone, call choose_slot, then book_appointment for that person. A chosen slot is NOT a booking: "

@@ -59,10 +59,11 @@ def main():
             tcs = [llm.FunctionToolCall(name=n, arguments="{}", call_id=f"c{i}") for i, n in enumerate(names)]
             return llm.ChatChunk(id="x", delta=llm.ChoiceDelta(role="assistant", tool_calls=tcs))
 
-        async def drive(chunks, hops=1):
+        async def drive(chunks, hops=1, caller_goodbye=False):
             d = tempfile.mkdtemp()
             core = AvaCore("t2", InProcessTransport(BookingService(SQLiteStore())), logger=CallLogger("t2", log_dir=d, alert_webhook=""), book_pause=0)
             core.mark_greeted()
+            core.state.caller_goodbye = caller_goodbye
 
             async def fake(agent, chat_ctx, tools, model_settings):
                 for c in chunks:
@@ -93,8 +94,10 @@ def main():
         results.append(("filler only once across hops", sum(1 for o in out if o.startswith("One moment")) == 1))
         out, ag = asyncio.run(drive([tool_chunk("book_appointment")]))
         results.append(("book filler wording", out[0] == "One moment while I book that. "))
-        out, ag = asyncio.run(drive([chunk("Thanks, goodbye."), tool_chunk("end_call")]))
+        out, ag = asyncio.run(drive([chunk("Thanks, goodbye."), tool_chunk("end_call")], caller_goodbye=True))
         results.append(("model goodbye is detected (no second goodbye)", bool(__import__("ava.voice.agent", fromlist=["GOODBYE_WORDS"]).GOODBYE_WORDS.search(ag._reply_text))))
+        out, ag = asyncio.run(drive([chunk("Have a great day, goodbye."), tool_chunk("end_call")]))
+        results.append(("goodbye before the caller's goodbye is replaced", "goodbye" not in ag._reply_text.lower() and "anything else" in ag._reply_text.lower()))
         out, ag = asyncio.run(drive([tool_chunk("find_slots")]))
         results.append(("lookup filler is not detected as goodbye", not __import__("ava.voice.agent", fromlist=["GOODBYE_WORDS"]).GOODBYE_WORDS.search(ag._reply_text)))
         return results

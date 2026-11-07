@@ -23,7 +23,7 @@ from livekit.plugins import turn_detector  # noqa: F401  imported here so `downl
 from ava import guards
 from ava.backend.client import HttpTransport
 from ava.core import AvaCore
-from ava.output_guard import SentenceGuard, violations
+from ava.output_guard import GOODBYE_WORDS, SentenceGuard, violations
 from ava.release import load_release, pick_version, ROOT
 from ava.state import Step
 from ava.telemetry import CallLogger, TurnRecord
@@ -43,7 +43,6 @@ SHORT_FILLER = {"en": "One moment.", "es": "Un momento."}
 FILLER_BY_TOOL = {"identify_patient": LOOKUP_FILLER, "find_slots": LOOKUP_FILLER, "find_provider": LOOKUP_FILLER,
                   "book_appointment": BOOK_FILLER, "set_party_size": SHORT_FILLER, "choose_slot": SHORT_FILLER,
                   "decline_patient": SHORT_FILLER}   # read_back_summary, end_call, request_human_transfer: no filler
-GOODBYE_WORDS = re.compile(r"\b(good\s?bye|bye|adi[oó]s|take care|have a (great|good|nice|wonderful) day)\b", re.I)
 SILENCE = {"en": "Are you still there?", "es": "¿Sigue ahí?"}
 GOODBYE_LINE = {"en": "Thank you for calling. Goodbye.", "es": "Gracias por llamar. Adiós."}
 
@@ -76,7 +75,7 @@ class AvaAgent(Agent):
         self.cur_tier, self.cur_reason = "small", "routine turn"
         self.turn_started = 0.0
         self.last_tools = []
-        self._acc = {"p": 0, "c": 0, "k": 0, "n": 0, "dur": 0.0}
+        self._acc = {"p": 0, "c": 0, "k": 0, "n": 0, "dur": 0.0, "tool_ms": 0.0}
         self._part, self._part_turn = 0, -1
         self.end_reason = ""
         self._reset_reply()
@@ -310,7 +309,7 @@ async def entrypoint(ctx: JobContext):
         if getattr(item, "role", "") != "assistant":
             return
         text = item.text_content or ""
-        acc = getattr(agent, "_acc", None) or {"p": 0, "c": 0, "k": 0, "n": 0, "dur": 0.0}
+        acc = getattr(agent, "_acc", None) or {"p": 0, "c": 0, "k": 0, "n": 0, "dur": 0.0, "tool_ms": 0.0}
         agent._part = agent._part + 1 if agent._part_turn == core.state.turn_count else 1
         agent._part_turn = core.state.turn_count
         um, am = getattr(agent, "_user_metrics", {}), dict(getattr(item, "metrics", None) or {})
@@ -330,9 +329,10 @@ async def entrypoint(ctx: JobContext):
                                tts_ttfb_s=round(float(am.get("tts_node_ttfb") or 0.0), 3),
                                filler_played=bool(getattr(agent, "_filler_played", False)),
                                prompt_tokens=int(acc["p"]), completion_tokens=int(acc["c"]), cached_tokens=int(acc["k"]),
-                               llm_calls=int(acc["n"]), llm_total_s=round(float(acc["dur"]), 3), part=agent._part))
+                               tool_ms=round(float(core.tool_ms), 1), llm_calls=int(acc["n"]), llm_total_s=round(float(acc["dur"]), 3), part=agent._part))
         agent.last_tools = []
-        agent._acc = {"p": 0, "c": 0, "k": 0, "n": 0, "dur": 0.0}
+        core.tool_ms = 0.0
+        agent._acc = {"p": 0, "c": 0, "k": 0, "n": 0, "dur": 0.0, "tool_ms": 0.0}
 
     @session.on("close")
     def _on_close(ev):

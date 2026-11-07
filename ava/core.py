@@ -24,6 +24,18 @@ class AvaCore:
         self.last_tool_error = False
         self.last_user_text = ""
         self.one_booking_per_turn = one_booking_per_turn
+        self.tool_ms = 0.0                       # summed duration of tool calls since the last reset (read by the voice worker)
+        for name in ("identify_patient", "find_slots", "find_provider", "book_appointment"):
+            setattr(self, name, self._timed(getattr(self, name)))
+
+    def _timed(self, fn):
+        async def run(*a, **k):
+            t0 = time.perf_counter()
+            try:
+                return await fn(*a, **k)
+            finally:
+                self.tool_ms += (time.perf_counter() - t0) * 1000.0
+        return run
 
     # ---- per-turn hook: runs BEFORE the model sees the turn ---------------
     def on_user_turn(self, text):

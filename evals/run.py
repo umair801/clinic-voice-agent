@@ -462,6 +462,36 @@ async def s_goodbye_with_unbooked_child_asks_once_no_goodbye():
     d2 = core.end_call_check()
     return asks and (not d.allowed) and clean and d2.allowed, f"instruction asks once {asks}, guard blocked {not d.allowed}, after decline instruction clean {clean}, end allowed {d2.allowed}"
 
+
+async def s_real_call_goodbye_before_caller_goodbye_replaced():
+    """Simulated call: caller said 'yes, that is all correct, thank you' and Ava answered 'Have a great day, and goodbye.'"""
+    core, st = make()
+    core.on_user_turn("Yes, that is all correct. Thank you.")
+    out, blocked = await _guard_stream(core.state, "You're welcome, Maria. Have a great day, and goodbye. ")
+    ok = "goodbye" not in out.lower() and "anything else" in out.lower() and len(blocked) == 1
+    core.on_user_turn("No, that is everything. Goodbye.")
+    out2, blocked2 = await _guard_stream(core.state, "Thank you for calling, Maria. Goodbye. ")
+    det = [guards.detect_goodbye(t, True) for t in ("Yes, that is all correct. Thank you.", "That's all right, thanks.", "That is all, thank you.", "That's all. Bye.")]
+    ok = ok and det == [False, False, True, True]
+    return ok and "Goodbye" in out2 and not blocked2, f"detector {det}; premature replaced: {ok} -> {out.strip()!r}; real goodbye untouched: {'Goodbye' in out2}"
+
+
+async def s_tool_ms_is_measured():
+    core, st = make()
+    core.tool_ms = 0.0
+    await core.identify_patient("self", "Maria", "1982-03-14")
+    first = core.tool_ms
+    await core.find_slots("pediatrics", 3)
+    return first > 0 and core.tool_ms > first, f"identify {first:.2f} ms, after find_slots {core.tool_ms:.2f} ms"
+
+
+async def s_collect_step_asks_for_parallel_calls():
+    core, st = make()
+    core.on_user_turn("Hi, I am Maria, born March 14 1982.")
+    await core.identify_patient("self", "Maria", "1982-03-14")
+    ins = core.on_user_turn("I also need visits for my two kids.")["instruction"]
+    return "SAME step" in ins and "set_party_size" in ins, f"step {core.state.step.value}"
+
 SCENARIOS = [(n[2:], f) for n, f in list(globals().items()) if n.startswith("s_") and callable(f)]
 
 

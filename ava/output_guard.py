@@ -20,6 +20,9 @@ WIDE = re.compile(r"\b(all|everyone|everybody|everything|both|children|kids)\b",
 # A sentence that also says something is still open ("your visit is booked, Lucas still needs one") is honest.
 OPEN = re.compile(r"\b(still|not|yet|don'?t|doesn'?t|haven'?t|hasn'?t|need|needs|left|remaining|without)\b", re.I)
 
+GOODBYE_WORDS = re.compile(r"\b(good\s?bye|bye|adi[oó]s|take care|have a (great|good|nice|wonderful) day)\b", re.I)
+ASK_MORE = {"en": "Is there anything else I can help you with?", "es": "¿Hay algo más en lo que pueda ayudarle?"}
+
 SAFE_LINE = {"en": "One moment while I confirm that with the clinic.",
              "es": "Un momento mientras lo confirmo con la clínica."}
 
@@ -54,6 +57,12 @@ class SentenceGuard:
         self.state, self.on_block, self.buf = state, on_block, ""
 
     def _check(self, sentence):
+        if GOODBYE_WORDS.search(sentence) and not self.state.caller_goodbye:
+            # The caller has not said goodbye. Never close the call for them; ask instead (failure 7, spoken side).
+            if self.on_block:
+                self.on_block(["goodbye before the caller said goodbye"], sentence)
+            trail = sentence[len(sentence.rstrip()):]
+            return ASK_MORE.get(self.state.language, ASK_MORE["en"]) + (trail or " ")
         v = violations(self.state, sentence)
         if not v:
             return sentence

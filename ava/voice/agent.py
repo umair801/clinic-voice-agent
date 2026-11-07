@@ -241,7 +241,17 @@ async def entrypoint(ctx: JobContext):
     @ctx.room.on("participant_disconnected")
     def _on_left(p):
         agent.end_reason = agent.end_reason or "caller_disconnected"
-        logger.event("participant_left", identity=str(p.identity), reason=str(getattr(p, "disconnect_reason", "")))
+        attrs = {k: str(v)[:80] for k, v in dict(getattr(p, "attributes", None) or {}).items() if "phone" not in k.lower() and "number" not in k.lower()}
+        logger.event("participant_left", identity=str(p.identity), reason=str(getattr(p, "disconnect_reason", "")),
+                     agent_state=str(getattr(session, "agent_state", "")), user_state=str(getattr(session, "user_state", "")),
+                     sip=attrs)
+
+    @ctx.room.on("participant_attributes_changed")
+    def _on_attrs(changed, p):
+        # SIP call status changes (for example active to hangup) show which leg ended the call.
+        keep = {k: str(v)[:80] for k, v in dict(changed).items() if "phone" not in k.lower() and "number" not in k.lower()}
+        if keep:
+            logger.event("sip_attributes_changed", identity=str(p.identity), changed=keep)
 
     @ctx.room.on("disconnected")
     def _on_room_disc(reason=None):

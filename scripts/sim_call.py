@@ -39,11 +39,21 @@ SCENARIOS = {
         "Hi, my name is Maria Alvarez and my date of birth is March fourteenth, nineteen eighty two.",
         "I also need appointments for my two children. Lucas, born June second, twenty thirteen, and Sofia, born September twenty first, twenty sixteen.",
         "A general checkup for all three of us, please.",
-        "The first time works for me.",
-        "The first one works for Lucas too.",
-        "The first one works for Sofia too.",
+        "Yes, please book that for me.",
+        "Yes, that works for Lucas. Please book him.",
+        "Yes, that works for Sofia. Please book her.",
         "Yes, that is all correct. Thank you.",
         "No, that is everything. Goodbye.",
+    ],
+    # Caller leaves one child unbooked. Tests the end-of-call guard: one question, no goodbye before it.
+    "family_leave_sofia": [
+        "Hi, my name is Maria Alvarez and my date of birth is March fourteenth, nineteen eighty two.",
+        "I also need appointments for my two children. Lucas, born June second, twenty thirteen, and Sofia, born September twenty first, twenty sixteen.",
+        "A general checkup for all three of us, please.",
+        "Yes, please book that for me.",
+        "Yes, that works for Lucas. Please book him.",
+        "No, skip Sofia for now. That is everything. Goodbye.",
+        "Yes, leave her without one. Goodbye.",
     ],
     # One person, short.
     "simple": [

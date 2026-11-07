@@ -103,7 +103,7 @@ class CallState:
     def needs_booking(self):
         """Patients with a chosen slot whose outcome is not settled."""
         return [p for p in self.patients
-                if p.slot and p.status in (BookingStatus.NONE.value, BookingStatus.PENDING.value)]
+                if not p.declined and p.slot and p.status in (BookingStatus.NONE.value, BookingStatus.PENDING.value)]
 
     def has_pending_work(self):
         """True if hanging up now would drop work. Used by the end_call guard."""
@@ -190,6 +190,12 @@ class CallState:
             else:
                 lines.append("Ask if there is anything else. Do not say goodbye until the caller says they are done. "
                              "Call end_call only after the caller's explicit goodbye.")
+        if self.caller_goodbye and self.has_pending_work() and not self.pending_tools:
+            open_names = [p.first_name or p.key for p in self.active_patients() if p.status != BookingStatus.BOOKED.value]
+            who = ", ".join(open_names) or "someone"
+            lines.append(f"THE CALLER WANTS TO FINISH, BUT {who} STILL HAS NO APPOINTMENT. Do NOT say goodbye and do NOT call end_call "
+                         f"in this reply. Ask ONE short question: should {who} be left without a visit, or booked now? "
+                         f"If the caller says leave {who} without one, call decline_patient for that person, then say goodbye and call end_call.")
         lines.append("RULE: never transfer the call unless the caller asks for a person or a tool has failed.")
         lines.append("RULE: say a visit is booked ONLY for patients whose status above is 'booked'. "
                      "If a status is 'pending', say you are still confirming it. If 'failed', say it did not go through "

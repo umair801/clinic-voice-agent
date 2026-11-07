@@ -443,6 +443,25 @@ async def s_family_flow_works_with_turn_rule():
             break
     return len(core.state.booked()) == 3 and len(st.all_appointments()) == 3, f"booked {len(core.state.booked())}, rows {len(st.all_appointments())}"
 
+
+async def s_goodbye_with_unbooked_child_asks_once_no_goodbye():
+    """Simulated call: caller said 'that is everything, goodbye' while Sofia had no appointment. Ava said goodbye, then the guard refused."""
+    core, st = await _family_ready()
+    core.on_user_turn("Yes, book me.")
+    await core.book_appointment("self")
+    core.on_user_turn("Yes, book Lucas.")
+    await core.book_appointment("child1")
+    out = core.on_user_turn("No, that is everything. Goodbye.")
+    ins = out["instruction"]
+    asks = "STILL HAS NO APPOINTMENT" in ins and "Do NOT say goodbye" in ins and "Sofia" in ins
+    d = core.end_call_check()
+    await core.decline_patient("child2")
+    out2 = core.on_user_turn("Yes, leave her without one. Goodbye.")
+    clean = "STILL HAS NO APPOINTMENT" not in out2["instruction"]
+    core.agent_said_goodbye()
+    d2 = core.end_call_check()
+    return asks and (not d.allowed) and clean and d2.allowed, f"instruction asks once {asks}, guard blocked {not d.allowed}, after decline instruction clean {clean}, end allowed {d2.allowed}"
+
 SCENARIOS = [(n[2:], f) for n, f in list(globals().items()) if n.startswith("s_") and callable(f)]
 
 

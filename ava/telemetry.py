@@ -58,6 +58,9 @@ class TurnRecord:
     cost_usd: float = 0.0
     tools: list = field(default_factory=list)
     tool_ms: float = 0.0
+    llm_calls: int = 0              # model calls behind this reply (2+ when a tool ran)
+    llm_total_s: float = 0.0        # summed model time for those calls
+    part: int = 0                   # nth reply item for this caller turn (tool turns make several)
     interrupted: bool = False
     filler_played: bool = False
     fallback_used: bool = False
@@ -144,6 +147,9 @@ def summarize(rows):
         "fallback_turns": sum(1 for r in turns if r.get("fallback_used")),
         "stage_p50_s": {k: _pct([r[k] for r in turns if r.get(k)], 0.5)
                         for k in ("stt_delay_s", "eou_delay_s", "hook_s", "llm_ttft_s", "tts_ttfb_s")},
+        "llm_calls_per_reply_p50": _pct([r["llm_calls"] for r in turns if r.get("llm_calls")], 0.5),
+        "latency_p50_s_tool_replies": _pct([r["response_latency_s"] for r in turns if r.get("response_latency_s") and r.get("tools")], 0.5),
+        "latency_p50_s_no_tool_replies": _pct([r["response_latency_s"] for r in turns if r.get("response_latency_s") and not r.get("tools")], 0.5),
         "error_events": sum(1 for e in events if e.get("level") == "error"),
         "tool_errors": sum(1 for e in events if e.get("event") in TOOL_ERROR_EVENTS),
         "false_booking_claims_spoken": sum(1 for e in events if e.get("event") == "false_booking_claim"),
@@ -155,6 +161,10 @@ def summarize(rows):
 def _stages(r):
     parts = [f"{k}={r[k]:.2f}" for k in ("stt_delay_s", "eou_delay_s", "hook_s", "llm_ttft_s", "tts_ttfb_s") if r.get(k)]
     return f" [{' '.join(parts)}]" if parts else ""
+
+
+def _llm(r):
+    return f" [llm_calls={r['llm_calls']} llm_total_s={r.get('llm_total_s', 0):.2f} part={r.get('part', 0)}]" if r.get("llm_calls") else ""
 
 
 def replay(path, out=print):
@@ -169,6 +179,6 @@ def replay(path, out=print):
         else:
             out(f"{dt:7.1f}s  TURN {r['turn']:>2} step={r['step']} lang={r['language']} tier={r['tier']} ({r['route_reason']}) "
                 f"lat={r['response_latency_s']:.2f}s"
-                f"{_stages(r)} tokens={r['prompt_tokens']}+{r['completion_tokens']} cost=${r['cost_usd']:.5f} "
+                f"{_stages(r)}{_llm(r)} tokens={r['prompt_tokens']}+{r['completion_tokens']} cost=${r['cost_usd']:.5f} "
                 f"tools={r['tools']}{' INTERRUPTED' if r['interrupted'] else ''}{' FALLBACK' if r['fallback_used'] else ''}")
     out(json.dumps(summarize(rows), indent=2))

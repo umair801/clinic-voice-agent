@@ -66,6 +66,9 @@ class AvaAgent(Agent):
         self.cur_tier, self.cur_reason = "small", "routine turn"
         self.turn_started = 0.0
         self.last_tools = []
+        self._acc = {"p": 0, "c": 0, "k": 0, "n": 0, "dur": 0.0}
+        self._part, self._part_turn = 0, -1
+        self.end_reason = ""
 
     # ---- runs after the caller finishes a turn, BEFORE the model replies ----
     async def on_user_turn_completed(self, turn_ctx, new_message):
@@ -193,6 +196,7 @@ class AvaAgent(Agent):
         if not d.allowed:
             self.core.state.agent_goodbye_said = False
             return {"ended": False, "reason": d.reason, "say": "Do not end the call. Continue helping."}
+        self.end_reason = "agent_ended_call_after_goodbye"
         await context.session.say(GOODBYE_LINE[self.core.state.language], allow_interruptions=False)
         await self.ctx.api.room.delete_room(api.DeleteRoomRequest(room=self.ctx.room.name))
         return {"ended": True}
@@ -229,12 +233,14 @@ async def entrypoint(ctx: JobContext):
     agent = AvaAgent(core, prompt, llms, cfg, manifest, ctx)
 
     async def _call_end(reason: str = ""):  # LiveKit awaits shutdown callbacks, so this must be async
-        logger.event("call_end", turns=core.state.turn_count, booked=len(core.state.booked()), reason=reason)
+        logger.event("call_end", turns=core.state.turn_count, booked=len(core.state.booked()),
+                     reason=agent.end_reason or reason or "unknown")
 
     ctx.add_shutdown_callback(_call_end)
 
     @ctx.room.on("participant_disconnected")
     def _on_left(p):
+        agent.end_reason = agent.end_reason or "caller_disconnected"
         logger.event("participant_left", identity=str(p.identity), reason=str(getattr(p, "disconnect_reason", "")))
 
     @ctx.room.on("disconnected")
@@ -250,6 +256,9 @@ async def entrypoint(ctx: JobContext):
         if getattr(item, "role", "") != "assistant":
             return
         text = item.text_content or ""
+        acc = getattr(agent, "_acc", None) or {"p": 0, "c": 0, "k": 0, "n": 0, "dur": 0.0}
+        agent._part = agent._part + 1 if agent._part_turn == core.state.turn_count else 1
+        agent._part_turn = core.state.turn_count
         um, am = getattr(agent, "_user_metrics", {}), dict(getattr(item, "metrics", None) or {})
         for v in violations(core.state, text):
             logger.event("false_booking_claim", level="error", detail=v, text=text[:200])
@@ -265,10 +274,10 @@ async def entrypoint(ctx: JobContext):
                                hook_s=round(float(um.get("on_user_turn_completed_delay") or 0.0), 3),
                                llm_ttft_s=round(float(am.get("llm_node_ttft") or 0.0), 3),
                                tts_ttfb_s=round(float(am.get("tts_node_ttfb") or 0.0), 3),
-                               prompt_tokens=int(getattr(agent, "_last_prompt_tokens", 0)),
-                               completion_tokens=int(getattr(agent, "_last_completion_tokens", 0)),
-                               cached_tokens=int(getattr(agent, "_last_cached_tokens", 0))))
+                               prompt_tokens=int(acc["p"]), completion_tokens=int(acc["c"]), cached_tokens=int(acc["k"]),
+                               llm_calls=int(acc["n"]), llm_total_s=round(float(acc["dur"]), 3), part=agent._part))
         agent.last_tools = []
+        agent._acc = {"p": 0, "c": 0, "k": 0, "n": 0, "dur": 0.0}
 
     @session.on("close")
     def _on_close(ev):
@@ -278,9 +287,13 @@ async def entrypoint(ctx: JobContext):
     def _on_metrics(ev):
         m = ev.metrics
         if getattr(m, "type", "") == "llm_metrics":
-            agent._last_prompt_tokens = m.prompt_tokens
-            agent._last_completion_tokens = m.completion_tokens
-            agent._last_cached_tokens = getattr(m, "prompt_cached_tokens", 0) or 0
+            # A reply with tool calls makes 2+ model calls. Add them all up so cost and timing are not undercounted.
+            a = agent._acc
+            a["p"] += m.prompt_tokens
+            a["c"] += m.completion_tokens
+            a["k"] += getattr(m, "prompt_cached_tokens", 0) or 0
+            a["n"] += 1
+            a["dur"] += float(getattr(m, "duration", 0.0) or 0.0)
 
     @session.on("user_state_changed")
     def _on_user_state(ev):
@@ -295,6 +308,7 @@ async def entrypoint(ctx: JobContext):
             async def finish():
                 if act == "handoff":
                     await core.leave_callback("caller went silent with work pending")
+                agent.end_reason = "silence_" + act
                 logger.event("silence_close", action=act, level="warn" if act == "handoff" else "info")
                 await ctx.api.room.delete_room(api.DeleteRoomRequest(room=ctx.room.name))
             import asyncio

@@ -1,9 +1,10 @@
 {
-  "stable": "1.0.2",
+  "stable": "1.0.3",
   "canary": null,
   "canary_percent": 0,
   "history": [
     "1.0.0",
-    "1.0.1"
+    "1.0.1",
+    "1.0.2"
   ]
 }

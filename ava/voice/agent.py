@@ -59,10 +59,25 @@ def load_config(call_id):
     return load_release(v)
 
 
+class VoiceLLM(anthropic.LLM):
+    """Anthropic LLM with adaptive thinking switched off per request.
+
+    Measured on test calls: with thinking on (the Haiku 5.5 default) a one-line spoken reply came back with 190 to 220
+    completion tokens, so most tokens were hidden thinking. That adds first-token delay and cost on every turn."""
+    thinking_mode = "disabled"
+
+    def chat(self, *args, extra_kwargs=None, **kwargs):
+        kw = dict(extra_kwargs) if isinstance(extra_kwargs, dict) else {}
+        if self.thinking_mode == "disabled":
+            kw.setdefault("thinking", {"type": "disabled"})
+        return super().chat(*args, extra_kwargs=kw, **kwargs)
+
+
 def build_llms(cfg):
     key = os.getenv("ANTHROPIC_API_KEY", "")
-    small = anthropic.LLM(model=cfg["models"]["small"], api_key=key, caching="ephemeral")
-    large = anthropic.LLM(model=cfg["models"]["large"], api_key=key, caching="ephemeral")
+    VoiceLLM.thinking_mode = (cfg.get("llm") or {}).get("thinking", "disabled")
+    small = VoiceLLM(model=cfg["models"]["small"], api_key=key, caching="ephemeral")
+    large = VoiceLLM(model=cfg["models"]["large"], api_key=key, caching="ephemeral")
     # Fallback keeps the call alive on a model error; the step instruction is rebuilt from external state, so nothing is skipped.
     return {"small": llm.FallbackAdapter([small, large], attempt_timeout=5.0),
             "large": llm.FallbackAdapter([large, small], attempt_timeout=8.0)}

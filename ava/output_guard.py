@@ -23,6 +23,12 @@ OPEN = re.compile(r"\b(still|not|yet|don'?t|doesn'?t|haven'?t|hasn'?t|need|needs
 GOODBYE_WORDS = re.compile(r"\b(good\s?bye|bye|adi[oó]s|take care|have a (great|good|nice|wonderful) day)\b", re.I)
 ASK_MORE = {"en": "Is there anything else I can help you with?", "es": "¿Hay algo más en lo que pueda ayudarle?"}
 
+# "No visit is booked yet" / "Sofia is not booked yet" are honest statements, not claims.
+NEGATED = re.compile(r"\b(no|none|nothing|nobody)\b[^.!?]{0,30}\b(is|are|has been|have been)\s+(booked|scheduled|confirmed)\b|"
+                     r"\b(booked|scheduled|confirmed)\s+yet\b", re.I)
+PENDING_ASK = {"en": "Before you go, {who} still has no appointment. Should I book {who} now, or leave it for another time?",
+               "es": "Antes de despedirnos, a {who} todavía le falta una cita. ¿La agendamos ahora o la dejamos para otro momento?"}
+
 SAFE_LINE = {"en": "One moment while I confirm that with the clinic.",
              "es": "Un momento mientras lo confirmo con la clínica."}
 
@@ -30,7 +36,7 @@ SAFE_LINE = {"en": "One moment while I confirm that with the clinic.",
 def violations(state, text):
     out = []
     for sentence in re.split(r"(?<=[.!?])\s+", text):
-        if not CLAIM.search(sentence):
+        if not CLAIM.search(sentence) or NEGATED.search(sentence):
             continue
         named = [p for p in state.active_patients() if p.first_name and p.first_name.lower() in sentence.lower()]
         unconfirmed = [p for p in state.active_patients() if p.status != BookingStatus.BOOKED.value]
@@ -55,8 +61,20 @@ class SentenceGuard:
 
     def __init__(self, state, on_block=None):
         self.state, self.on_block, self.buf = state, on_block, ""
+        self.asked = False                # a question was already spoken in this reply
 
     def _check(self, sentence):
+        if GOODBYE_WORDS.search(sentence) and self.state.has_pending_work() and not self.state.pending_tools:
+            # Someone still has no appointment. Never say goodbye over open work; ask once instead (failure 7, spoken side).
+            if self.on_block:
+                self.on_block(["goodbye while a person still has no appointment"], sentence)
+            if self.asked:
+                return ""
+            names = [p.first_name or p.key for p in self.state.active_patients() if p.status != BookingStatus.BOOKED.value]
+            who = " and ".join(names) or "someone"
+            self.asked = True
+            trail = sentence[len(sentence.rstrip()):]
+            return PENDING_ASK.get(self.state.language, PENDING_ASK["en"]).format(who=who) + (trail or " ")
         if GOODBYE_WORDS.search(sentence) and not self.state.caller_goodbye:
             # The caller has not said goodbye. Never close the call for them; ask instead (failure 7, spoken side).
             if self.on_block:
@@ -75,7 +93,9 @@ class SentenceGuard:
         self.buf += text
         out, pos = [], 0
         for m in self._END.finditer(self.buf):
-            out.append(self._check(self.buf[pos:m.end()]))
+            chunk = self._check(self.buf[pos:m.end()])
+            self.asked = self.asked or "?" in chunk
+            out.append(chunk)
             pos = m.end()
         self.buf = self.buf[pos:]
         return "".join(out)

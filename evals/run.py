@@ -492,6 +492,66 @@ async def s_collect_step_asks_for_parallel_calls():
     ins = core.on_user_turn("I also need visits for my two kids.")["instruction"]
     return "SAME step" in ins and "set_party_size" in ins, f"step {core.state.step.value}"
 
+
+async def s_real_call_same_slot_for_two_people_blocked():
+    """Simulated call: after Maria booked 10:00, Lucas was offered 'the same time', the model reused Maria's slot id and booking failed."""
+    core2, st2 = make(strict_turns=False)
+    await core2.set_party_size(2)
+    for k, f, d in FAMILY[:2]:
+        await core2.identify_patient(k, f, d)
+    sl = (await core2.find_slots("pediatrics", 3))["slots"]
+    first = sl[0]["slot_id"]
+    await core2.choose_slot("self", first)
+    core2.on_user_turn("Yes, book me.")
+    b = await core2.book_appointment("self")
+    again = await core2.find_slots("pediatrics", 3)
+    r = await core2.choose_slot("child1", first)                    # the model reuses Maria's slot id
+    ok = (b["status"] == "booked" and first not in [x["slot_id"] for x in again["slots"]]
+          and r.get("ok") is False and r.get("slots") and first not in [x["slot_id"] for x in r["slots"]])
+    r2 = await core2.choose_slot("child1", r["slots"][0]["slot_id"])
+    return ok and r2.get("ok") is True, f"reuse blocked: {r.get('ok') is False}, fresh slots offered: {len(r.get('slots', []))}, new choice accepted: {r2.get('ok')}"
+
+
+async def s_accented_name_still_matches():
+    """Simulated Spanish call: the model wrote 'María' and the record is 'Maria', so the lookup said not found."""
+    core, st = make()
+    a = await core.identify_patient("self", "María", "1982-03-14")
+    b = await core.identify_patient("self", "MARIA", "1982-03-14")
+    c = await core.identify_patient("self", "Mario", "1982-03-14")
+    return a["found"] and b["found"] and not c["found"], f"María {a['found']}, MARIA {b['found']}, Mario {c['found']}"
+
+
+async def s_negated_statement_is_not_a_false_claim():
+    core, st = make()
+    ok_text = "No visit is booked yet, so please call us back when you're ready to schedule Sofia's checkup."
+    v1 = violations(st if hasattr(st, "active_patients") else core.state, ok_text)
+    await core.identify_patient("child2", "Sofia", "2016-09-21")
+    v2 = violations(core.state, ok_text)
+    v3 = violations(core.state, "Sofia is booked for November 12th.")
+    return not v1 and not v2 and bool(v3), f"negated honest sentence flagged {bool(v1 or v2)}, real false claim flagged {bool(v3)}"
+
+
+async def s_goodbye_over_open_work_becomes_one_question():
+    """Simulated call: caller said goodbye while a person still had no appointment; the model said goodbye and the guard then refused."""
+    core, st = await _family_ready(strict=False)
+    core.on_user_turn("Yes, book me.")
+    await core.book_appointment("self")
+    core.on_user_turn("No, that is everything. Goodbye.")
+    out, blocked = await _guard_stream(core.state, "Maria is booked. Goodbye, and take care. Have a great day. ")
+    asks_once = out.count("still has no appointment") == 1 and "oodbye" not in out
+    out2, _ = await _guard_stream(core.state, "Should I book Lucas now? Goodbye, take care. ")
+    no_double = out2.count("?") == 1 and "oodbye" not in out2
+    return asks_once and no_double and len(blocked) >= 1, f"asks once: {asks_once}; no second question after one was asked: {no_double}"
+
+
+async def s_spanish_request_is_honoured_not_refused():
+    core, st = make()
+    out = core.on_user_turn("Hello, can we speak in Spanish please?")
+    ins = out["instruction"]
+    ok = core.state.language == "es" and "Speak ONLY Spanish. You CAN speak Spanish" in ins and "just asked to change language" in ins
+    out2 = core.on_user_turn("Hola, me llamo Maria.")["instruction"]
+    return ok and "just asked to change language" not in out2, f"language {core.state.language}, switch notice only once: {'just asked' not in out2}"
+
 SCENARIOS = [(n[2:], f) for n, f in list(globals().items()) if n.startswith("s_") and callable(f)]
 
 

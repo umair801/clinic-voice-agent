@@ -44,6 +44,14 @@ def seed_slots():
     return out
 
 
+
+def fold_name(name):
+    """Lower-case and strip accents so 'María' matches 'Maria'. Spanish speech-to-text and the model often add accents."""
+    import unicodedata
+    n = unicodedata.normalize("NFKD", (name or "").strip())
+    return "".join(ch for ch in n if not unicodedata.combining(ch)).lower()
+
+
 class SQLiteStore:
     def __init__(self, path=":memory:"):
         self.lock = threading.Lock()
@@ -70,8 +78,9 @@ class SQLiteStore:
 
     # ---- reads ------------------------------------------------------------
     def identify(self, first_name, dob):
-        r = self.db.execute("SELECT * FROM patients WHERE lower(first_name)=lower(?) AND dob=?", (first_name.strip(), dob)).fetchall()
-        return [dict(x) for x in r]
+        r = self.db.execute("SELECT * FROM patients WHERE dob=?", (dob,)).fetchall()
+        want = fold_name(first_name)
+        return [dict(x) for x in r if fold_name(x["first_name"]) == want]
 
     def get_by_key(self, key):
         r = self.db.execute("SELECT * FROM appointments WHERE idempotency_key=?", (key,)).fetchone()
@@ -159,7 +168,9 @@ class SupabaseStore:
         return r.json()
 
     def identify(self, first_name, dob):
-        return self._get("cva_patients", {"first_name": f"ilike.{first_name.strip()}", "dob": f"eq.{dob}", "select": "*"})
+        rows = self._get("cva_patients", {"dob": f"eq.{dob}", "select": "*"})
+        want = fold_name(first_name)
+        return [x for x in rows if fold_name(x["first_name"]) == want]
 
     def get_by_key(self, key):
         rows = self._get("cva_appointments", {"idempotency_key": f"eq.{key}", "select": "*"})

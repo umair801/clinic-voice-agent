@@ -1,9 +1,12 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "prompt_file": "prompts/system.md",
   "models": {
     "small": "claude-haiku-5-5",
     "large": "claude-sonnet-5-5"
+  },
+  "llm": {
+    "thinking": "disabled"
   },
   "fallback_order": [
     "small",

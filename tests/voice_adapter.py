@@ -100,6 +100,25 @@ def main():
         results.append(("goodbye before the caller's goodbye is replaced", "goodbye" not in ag._reply_text.lower() and "anything else" in ag._reply_text.lower()))
         out, ag = asyncio.run(drive([tool_chunk("find_slots")]))
         results.append(("lookup filler is not detected as goodbye", not __import__("ava.voice.agent", fromlist=["GOODBYE_WORDS"]).GOODBYE_WORDS.search(ag._reply_text)))
+        # thinking must be off on every model request (measured: hidden thinking tokens dominated each reply)
+        from livekit.plugins import anthropic as _an
+        from ava.voice.agent import VoiceLLM
+        seen = []
+        orig = _an.LLM.chat
+        _an.LLM.chat = lambda self, *a, **k: seen.append(k.get("extra_kwargs")) or None
+        try:
+            VoiceLLM.thinking_mode = "disabled"
+            m = VoiceLLM(model="claude-haiku-5-5", api_key="x")
+            m.chat(chat_ctx=None)
+            m.chat(chat_ctx=None, extra_kwargs={"metadata": {"a": 1}})
+            VoiceLLM.thinking_mode = "adaptive"
+            m.chat(chat_ctx=None)
+        finally:
+            _an.LLM.chat = orig
+            VoiceLLM.thinking_mode = "disabled"
+        results.append(("thinking disabled on every request", seen[0] == {"thinking": {"type": "disabled"}}
+                        and seen[1] == {"metadata": {"a": 1}, "thinking": {"type": "disabled"}}))
+        results.append(("thinking left alone when config says adaptive", seen[2] == {}))
         return results
 
     fres = filler_checks()

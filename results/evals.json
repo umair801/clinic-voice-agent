@@ -1,7 +1,7 @@
 {
   "label": "orchestration evals, stub model",
-  "passed": 40,
-  "total": 40,
+  "passed": 45,
+  "total": 45,
   "results": [
     {
       "name": "family_with_lost_response",
@@ -106,7 +106,7 @@
     {
       "name": "prompt_small_and_retrieval_tiny",
       "passed": true,
-      "detail": "prompt 1313 chars, retrieval result 359 chars"
+      "detail": "prompt 1464 chars, retrieval result 359 chars"
     },
     {
       "name": "retrieval_correct",
@@ -136,7 +136,7 @@
     {
       "name": "release_gate_hash",
       "passed": true,
-      "detail": "config version 1.0.2 references an in-repo prompt"
+      "detail": "config version 1.0.3 references an in-repo prompt"
     },
     {
       "name": "real_call_premature_claim_blocked",
@@ -196,12 +196,37 @@
     {
       "name": "tool_ms_is_measured",
       "passed": true,
-      "detail": "identify 0.47 ms, after find_slots 1.40 ms"
+      "detail": "identify 0.97 ms, after find_slots 4.10 ms"
     },
     {
       "name": "collect_step_asks_for_parallel_calls",
       "passed": true,
       "detail": "step collect_patients"
+    },
+    {
+      "name": "real_call_same_slot_for_two_people_blocked",
+      "passed": true,
+      "detail": "reuse blocked: True, fresh slots offered: 3, new choice accepted: True"
+    },
+    {
+      "name": "accented_name_still_matches",
+      "passed": true,
+      "detail": "Mar\u00eda True, MARIA True, Mario False"
+    },
+    {
+      "name": "negated_statement_is_not_a_false_claim",
+      "passed": true,
+      "detail": "negated honest sentence flagged False, real false claim flagged True"
+    },
+    {
+      "name": "goodbye_over_open_work_becomes_one_question",
+      "passed": true,
+      "detail": "asks once: True; no second question after one was asked: True"
+    },
+    {
+      "name": "spanish_request_is_honoured_not_refused",
+      "passed": true,
+      "detail": "language es, switch notice only once: True"
     }
   ]
 }

@@ -61,6 +61,7 @@ class CallState:
     patients: list = field(default_factory=list)  # list[PatientEntry]
     pending_tools: list = field(default_factory=list)
     caller_goodbye: bool = False
+    language_just_switched: bool = False
     agent_goodbye_said: bool = False
     transfer_requested: bool = False
     human_requested: bool = False               # the caller asked for a person
@@ -198,6 +199,10 @@ class CallState:
             lines.append(f"THE CALLER WANTS TO FINISH, BUT {who} STILL HAS NO APPOINTMENT. Do NOT say goodbye and do NOT call end_call "
                          f"in this reply. Ask ONE short question: should {who} be left without a visit, or booked now? "
                          f"If the caller says leave {who} without one, call decline_patient for that person, then say goodbye and call end_call.")
+        if self.language == "es":
+            lines.append("Speak ONLY Spanish. You CAN speak Spanish. Never tell the caller you can only use English.")
+        if self.language_just_switched:
+            lines.append("The caller just asked to change language. Confirm in the new language in one short sentence, then continue the current step.")
         lines.append("RULE: never transfer the call unless the caller asks for a person or a tool has failed.")
         lines.append("RULE: say a visit is booked ONLY for patients whose status above is 'booked'. "
                      "If a status is 'pending', say you are still confirming it. If 'failed', say it did not go through "

@@ -43,6 +43,7 @@ class AvaCore:
         s.turn_count += 1
         self.last_user_text = text
         dec = language.observe(s, text)
+        s.language_just_switched = bool(dec.switched)
         if dec.switched:
             self.log.event("language_switch", to=dec.language, reason=dec.reason)
         s.caller_goodbye = guards.detect_goodbye(text, s.step == Step.WRAP_UP)
@@ -90,15 +91,32 @@ class AvaCore:
             p.declined = True
         return {"ok": True}
 
+    def _slots_held_by_others(self, key=None):
+        """Slot ids already chosen or booked for another person on this call."""
+        return {p.slot: (p.first_name or p.key) for p in self.state.patients
+                if p.slot and p.key != key and not p.declined}
+
     async def find_slots(self, query="", limit=3):
+        self._last_slot_query = query
         provs = self.kb.find_providers(query, k=5) if query else []
-        slots = await self.t.slots([p["id"] for p in provs] or None, None, limit)
+        held = self._slots_held_by_others()
+        slots = await self.t.slots([p["id"] for p in provs] or None, None, limit + len(held))
+        slots = [s for s in slots if s["slot_id"] not in held][:limit]
         return {"slots": slots}
 
     async def choose_slot(self, key, slot_id):
         p = self.state.patient(key)
         if not p:
             return {"ok": False, "error": "unknown patient key"}
+        owner = self._slots_held_by_others(key).get(slot_id)
+        if owner:
+            # Two people cannot hold the same slot. Fail now, with fresh options, instead of failing later at booking.
+            self.log.event("slot_reuse_blocked", level="warn", patient=key, held_by=owner)
+            fresh = (await self.find_slots(getattr(self, "_last_slot_query", ""), 3))["slots"]
+            return {"ok": False, "error": f"that exact slot is already taken for {owner} on this call",
+                    "slots": fresh,
+                    "say": "Do not book that slot. Offer the caller the first slot in 'slots' for this person (it is a different slot, "
+                           "possibly the same time with another provider) and wait for their yes."}
         p.slot = slot_id
         return {"ok": True, "status": "slot_chosen_not_booked",
                 "say": "Slot noted. This is NOT a booking yet. Call book_appointment for this person before saying anything is booked."}

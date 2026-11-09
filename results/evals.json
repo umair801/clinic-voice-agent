@@ -1,7 +1,7 @@
 {
   "label": "orchestration evals, stub model",
-  "passed": 45,
-  "total": 45,
+  "passed": 50,
+  "total": 50,
   "results": [
     {
       "name": "family_with_lost_response",
@@ -106,7 +106,7 @@
     {
       "name": "prompt_small_and_retrieval_tiny",
       "passed": true,
-      "detail": "prompt 1464 chars, retrieval result 359 chars"
+      "detail": "prompt 1859 chars, retrieval result 359 chars"
     },
     {
       "name": "retrieval_correct",
@@ -136,7 +136,7 @@
     {
       "name": "release_gate_hash",
       "passed": true,
-      "detail": "config version 1.0.3 references an in-repo prompt"
+      "detail": "config version 1.0.4 references an in-repo prompt"
     },
     {
       "name": "real_call_premature_claim_blocked",
@@ -196,7 +196,7 @@
     {
       "name": "tool_ms_is_measured",
       "passed": true,
-      "detail": "identify 0.97 ms, after find_slots 4.10 ms"
+      "detail": "identify 0.43 ms, after find_slots 2.26 ms"
     },
     {
       "name": "collect_step_asks_for_parallel_calls",
@@ -227,6 +227,31 @@
       "name": "spanish_request_is_honoured_not_refused",
       "passed": true,
       "detail": "language es, switch notice only once: True"
+    },
+    {
+      "name": "real_call_reasoning_text_never_spoken",
+      "passed": true,
+      "detail": "spoken: 'Would you like the 11:00 AM slot or the 11:30 AM slot?', blocked 2"
+    },
+    {
+      "name": "real_call_markdown_and_provider_ids_not_spoken",
+      "passed": true,
+      "detail": "spoken: 'Here you go. Maria, with a provider. Lucas, with a provider.'"
+    },
+    {
+      "name": "real_call_transfer_not_promised_without_a_request",
+      "passed": true,
+      "detail": "unasked: '', asked: \"I'm transferring you to a person at the clinic now.\", offer kept: True"
+    },
+    {
+      "name": "real_call_explicit_spanish_survives_one_noisy_transcript",
+      "passed": true,
+      "detail": "stayed Spanish after one noisy English transcript: True, explicit English request honoured: True"
+    },
+    {
+      "name": "real_call_sophia_matches_sofia",
+      "passed": true,
+      "detail": "Sophia True, Lukas True, wrong DOB False, Mario False"
     }
   ]
 }

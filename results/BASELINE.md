@@ -43,7 +43,7 @@ Data source: harness replay of the task log (simulation, not a real call)
 ### 4. Whole call switches to Spanish on a single non-English word
 Status: FAIL
 
-language_rule flips to Spanish on "Sí, correct" and has no path back, so the caller's "English, please" is ignored.
+language_rule flips to Spanish on "SÃ­, correct" and has no path back, so the caller's "English, please" is ignored.
 
 Data source: harness replay of the task log (simulation, not a real call)
 

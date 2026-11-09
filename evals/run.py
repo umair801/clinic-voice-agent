@@ -552,6 +552,59 @@ async def s_spanish_request_is_honoured_not_refused():
     out2 = core.on_user_turn("Hola, me llamo Maria.")["instruction"]
     return ok and "just asked to change language" not in out2, f"language {core.state.language}, switch notice only once: {'just asked' not in out2}"
 
+async def s_real_call_reasoning_text_never_spoken():
+    """Real simulated call: the model said 'The caller said yes to a time, but didn't specify which...' out loud."""
+    core, st = make()
+    from ava.output_guard import SentenceGuard
+    blocked = []
+    g = SentenceGuard(core.state, on_block=lambda v, t: blocked.append(v))
+    out = g.feed("The caller said yes to a time, but didn't specify which. I should confirm rather than guess. "
+                 "Would you like the 11:00 AM slot or the 11:30 AM slot? ") + g.flush()
+    return "caller" not in out.lower() and "guess" not in out.lower() and "11:00" in out and len(blocked) == 2, f"spoken: {out.strip()!r}, blocked {len(blocked)}"
+
+
+async def s_real_call_markdown_and_provider_ids_not_spoken():
+    core, st = make()
+    from ava.output_guard import SentenceGuard
+    g = SentenceGuard(core.state)
+    out = g.feed("**Here you go.**\n- Maria, with provider 5.\n- Lucas, with provider 7.\n") + g.flush()
+    return "*" not in out and "-" not in out and not any(ch.isdigit() for ch in out), f"spoken: {out.strip()!r}"
+
+
+async def s_real_call_transfer_not_promised_without_a_request():
+    core, st = make()
+    from ava.output_guard import SentenceGuard
+    blocked = []
+    g = SentenceGuard(core.state, on_block=lambda v, t: blocked.append(v))
+    a = g.feed("I'm transferring you to a person at the clinic now. ") + g.flush()
+    core.state.human_requested = True
+    g2 = SentenceGuard(core.state)
+    b = g2.feed("I'm transferring you to a person at the clinic now. ") + g2.flush()
+    offer = SentenceGuard(core.state).feed("I can transfer you to a person if you like. ")
+    return a == "" and bool(blocked) and "transferring" in b and "transfer you" in offer, f"unasked: {a!r}, asked: {b.strip()!r}, offer kept: {'transfer you' in offer}"
+
+
+async def s_real_call_explicit_spanish_survives_one_noisy_transcript():
+    """Real call: Spanish was requested, one transcript came back as an English sentence and the call flipped to English."""
+    core, st = make()
+    core.on_user_turn("Hello, can we speak in Spanish please?")
+    core.on_user_turn("so low for me that is all I need for the check up please")
+    stayed = core.state.language == "es"
+    core.on_user_turn("English please")
+    back = core.state.language == "en"
+    return stayed and back, f"stayed Spanish after one noisy English transcript: {stayed}, explicit English request honoured: {back}"
+
+
+async def s_real_call_sophia_matches_sofia():
+    """Real call: speech-to-text wrote 'Sophia' for the record 'Sofia'. The exact date of birth still has to match."""
+    core, st = make()
+    a = await core.identify_patient("child2", "Sophia", "2016-09-21")
+    b = await core.identify_patient("child1", "Lukas", "2013-06-02")
+    c = await core.identify_patient("child3", "Sophia", "2016-09-22")
+    d = await core.identify_patient("child4", "Mario", "1982-03-14")
+    return a["found"] and b["found"] and not c["found"] and not d["found"], f"Sophia {a['found']}, Lukas {b['found']}, wrong DOB {c['found']}, Mario {d['found']}"
+
+
 SCENARIOS = [(n[2:], f) for n, f in list(globals().items()) if n.startswith("s_") and callable(f)]
 
 

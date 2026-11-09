@@ -95,17 +95,23 @@ def observe(state, text):
     if EN_REQUEST.search(text) and not ES_REQUEST.search(text):
         sw = state.language != "en"
         state.language, state.non_english_streak, state.english_streak = "en", 0, 0
+        state.language_explicit = True
         return LanguageDecision("en", sw, "explicit request for English")
     if ES_REQUEST.search(text):
         sw = state.language != "es"
         state.language, state.non_english_streak, state.english_streak = "es", 0, 0
+        state.language_explicit = True
         return LanguageDecision("es", sw, "explicit request for Spanish")
 
-    # 2. a full sentence that is unmistakably in the other language switches immediately
-    if state.language == "en" and _strong(text, "es"):
+    # 2. a full sentence that is unmistakably in the other language switches immediately,
+    #    unless the caller chose the language explicitly (then a single noisy transcript must not undo it;
+    #    only sustained evidence or another explicit request can)
+    if state.language_explicit:
+        pass
+    elif state.language == "en" and _strong(text, "es"):
         state.language, state.non_english_streak, state.english_streak = "es", 0, 0
         return LanguageDecision("es", True, "full Spanish sentence with several Spanish-only words")
-    if state.language == "es" and _strong(text, "en"):
+    elif state.language == "es" and _strong(text, "en"):
         state.language, state.non_english_streak, state.english_streak = "en", 0, 0
         return LanguageDecision("en", True, "full English sentence with several English-only words")
 

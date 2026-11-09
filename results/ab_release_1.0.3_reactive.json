@@ -1,0 +1,58 @@
+{
+  "label": "simulated-caller results (WebRTC, synthetic voice, no phone network). Not phone calls, not production.",
+  "release": "1.0.3",
+  "calls_planned": 15,
+  "calls_visible_in_log": 14,
+  "note": "Railway export cap hid family run 1; its call_end reports booked=3.",
+  "backend_confirmed": {
+    "family": {
+      "calls": "4 visible of 5",
+      "booked_all_three": 4,
+      "first_attempt_bookings": 12,
+      "retries": 0
+    },
+    "leave_sofia": {
+      "calls": 2,
+      "maria_and_lucas_booked": 2,
+      "sofia_left_without_visit": 2
+    },
+    "spanish": {
+      "calls": 3,
+      "booked": 3,
+      "explicit_request_honoured": 3
+    },
+    "simple": {
+      "calls": 3,
+      "booked": 2,
+      "unbooked_cause": "simulated caller had no answer to 'which time?'"
+    },
+    "si_and_name": {
+      "calls": 2,
+      "booked": 0,
+      "wrong_whole_call_switch": 0,
+      "cause": "speech-to-text heard Sofia as Sophia; lookup failed"
+    }
+  },
+  "false_booked_claims": 0,
+  "early_goodbyes_blocked_by_guard": 4,
+  "worker_side_turns": 116,
+  "reply_latency_p50_s": 1.69,
+  "reply_latency_p95_s": 2.73,
+  "llm_ttft_p50_s": 0.74,
+  "tool_ms_p50": 39.0,
+  "tool_ms_max": 127.6,
+  "tier": "small model on all turns, no fallback",
+  "client_side_latency_s": {
+    "english_p50": 1.8,
+    "english_p95": 2.83,
+    "spanish_p50": 2.03,
+    "spanish_p95": 3.22
+  },
+  "bugs_found_fixed_in_1.0.4": [
+    "reasoning text spoken",
+    "markdown and provider ids spoken",
+    "English guard text in Spanish call after one noisy transcript",
+    "transfer promised without request",
+    "Sofia/Sophia name mismatch"
+  ]
+}

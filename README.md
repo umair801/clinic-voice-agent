@@ -17,7 +17,7 @@ Built for community health centers and specialty practices. All patient data is 
 
 ## Proof
 
-Orchestration evals: 45 of 45 pass (run against a stub model; they test the safeguards, not the language model). See `results/evals.json`.
+Orchestration evals: 50 of 50 pass (run against a stub model; they test the safeguards, not the language model). See `results/evals.json`.
 
 Test-call results: PENDING. Development calls so far ran from a laptop, so no latency or cost number is claimed until the 20+ synthetic test calls run on the deployed service. Failure-by-failure table: `docs/BEFORE_AFTER.md`.
 
@@ -58,7 +58,7 @@ Stack: Python, FastAPI, LiveKit Agents, Twilio SIP, Deepgram, ElevenLabs, Anthro
 python -c "from tests.run_all import main; main()"
 ```
 
-Runs the baseline failure replay, its control cases, the 45 orchestration evals, and the modeled cost.
+Runs the baseline failure replay, its control cases, the 50 orchestration evals, and the modeled cost.
 
 ## Layout
 

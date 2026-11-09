@@ -62,6 +62,7 @@ class CallState:
     pending_tools: list = field(default_factory=list)
     caller_goodbye: bool = False
     language_just_switched: bool = False
+    language_explicit: bool = False             # language was set by an explicit caller request; one noisy transcript must not undo it
     agent_goodbye_said: bool = False
     transfer_requested: bool = False
     human_requested: bool = False               # the caller asked for a person

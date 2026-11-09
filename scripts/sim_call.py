@@ -19,6 +19,7 @@ import asyncio
 import hashlib
 import json
 import os
+import re
 import statistics
 import sys
 import time
@@ -84,6 +85,61 @@ SCENARIOS = {
         "Thank you, that is all. Goodbye.",
     ],
 }
+
+
+# ---- Reactive scenarios (suffix _r): a cooperative caller who ANSWERS what Ava asks -------------------------------
+# A fixed script cannot answer a clarifying question, so it derails a model that (correctly) asks one. Each rule is
+# (regex on what Ava just said, caller reply, max uses). Rules are checked in order. Still a synthetic, scripted-rule
+# caller: results are simulated-caller results, not phone calls.
+MARIA_DOB = "My date of birth is March fourteenth, nineteen eighty two."
+LUCAS_DOB = "Lucas was born June second, two thousand thirteen."
+SOFIA_DOB = "Sofia was born September twenty first, two thousand sixteen."
+CLOSE = "No, that is everything. Thank you, goodbye."
+_DOB_RULES = [
+    (r"sofia.{0,60}(date of birth|birthday|birth)|(date of birth|birthday|birth).{0,60}sofia", SOFIA_DOB, 3),
+    (r"lucas.{0,60}(date of birth|birthday|birth)|(date of birth|birthday|birth).{0,60}lucas", LUCAS_DOB, 3),
+    (r"your (date of birth|birthday)|what is your date|your birth", MARIA_DOB, 2),
+    (r"your (first )?name|spell", "My name is Maria Alvarez.", 2),
+]
+_KIND = (r"what kind|what type|reason for|appointment do you need|what would you like to book|appointment for|help you today|can i help", "A general checkup, please.", 3)
+_TAIL_RULES = [
+    (r"is that (right|correct)|did you mean|correct\?|right\?", "Yes, that is right.", 3),
+    (r"which (time|slot)|work for|would you like|should i book|same time|book (it|that|him|her)|go ahead|shall i|offer that", "Yes, that works. Please book it.", 8),
+]
+_CLOSE_RULE = [(r"anything else|else i can help|is there anything", CLOSE, 1)]
+_ONLY_ME = (r"for you, or|just you|someone else|anyone else|for yourself|who needs|who is the appointment|only for you", "Just for me.", 2)
+_KIDS = (r"for you, or|just you|someone else|anyone else|for yourself|who needs|who is the appointment|only for you",
+         "It is for me and my two children, Lucas and Sofia.", 2)
+REACTIVE = {
+    "family_r": {"seed": ["Hi, my name is Maria Alvarez and my date of birth is March fourteenth, nineteen eighty two.",
+                          "I also need appointments for my two children. Lucas, born June second, two thousand thirteen, and Sofia, born September twenty first, two thousand sixteen."],
+                 "rules": _CLOSE_RULE + _DOB_RULES + [_KIND, _KIDS] + _TAIL_RULES, "max_turns": 16},
+    "leave_r": {"seed": ["Hi, my name is Maria Alvarez and my date of birth is March fourteenth, nineteen eighty two.",
+                         "I also need appointments for my two children. Lucas, born June second, two thousand thirteen, and Sofia, born September twenty first, two thousand sixteen."],
+                "rules": _CLOSE_RULE + _DOB_RULES + [_KIND, _KIDS,
+                    (r"sofia.{0,80}(same time|would you like|work for|time for|book|slot)", "No, skip Sofia for now. That is everything. Goodbye.", 1),
+                    (r"(leave|left|without).{0,40}(sofia|her)|sofia.{0,40}(leave|left|without)", "Yes, leave her without one. Goodbye.", 2)] + _TAIL_RULES,
+                "max_turns": 16},
+    "simple_r": {"seed": ["Hello, my name is Maria Alvarez, born March fourteenth, nineteen eighty two."],
+                 "rules": _CLOSE_RULE + _DOB_RULES + [_KIND, _ONLY_ME] + _TAIL_RULES, "max_turns": 12},
+    "si_r": {"seed": ["Hello, my name is Maria Alvarez.", "Sí."],
+             "rules": _CLOSE_RULE + _DOB_RULES + [_KIND,
+                 (r"for you, or|just you|someone else|anyone else|who needs|who is the appointment|for sofia", "Sofia.", 1),
+                 (r"you,? maria,? or (for )?sofia|you or sofia|for both", "For both of us.", 2)] + _TAIL_RULES,
+             "max_turns": 14},
+    "spanish_r": {"seed": ["Hello, can we speak in Spanish please?",
+                           "Hola, me llamo Maria Alvarez, nací el catorce de marzo de mil novecientos ochenta y dos."],
+                  "rules": [(r"algo más|alguien más.{0,20}ayudar|algo más en lo que", "No, eso es todo. Gracias, adiós.", 1),
+                            (r"fecha de nacimiento|cumpleaños|nació", "Nací el catorce de marzo de mil novecientos ochenta y dos.", 2),
+                            (r"su nombre|deletre", "Me llamo Maria Alvarez.", 2),
+                            (r"para usted|alguien más|otra persona|solo para|quién", "Solo para mí.", 2),
+                            (r"qué tipo|qué cita|motivo|necesita llamar|en qué puedo", "Un chequeo general, por favor.", 2),
+                            (r"es correcto|es así|verdad\?", "Sí, es correcto.", 3),
+                            (r"qué horario|le (sirve|parece)|desea|quiere|reserv|agend|funciona", "Sí, ese horario está bien. Por favor resérvelo.", 8)],
+                  "max_turns": 12},
+}
+for _k, _v in REACTIVE.items():
+    SCENARIOS[_k] = list(_v["seed"])
 
 
 def load_env():
@@ -173,7 +229,11 @@ class Sim:
         cache = os.path.join(ROOT, "logs", "sim_audio")
         lines = SCENARIOS[self.scenario]
         self.log("preparing caller audio")
-        pcms = [synth(t, self.env, cache) for t in lines]
+        reactive = REACTIVE.get(self.scenario)
+        extra_texts = [r[1] for r in reactive["rules"]] if reactive else []
+        pcm_by_text = {t: synth(t, self.env, cache) for t in list(dict.fromkeys(lines + extra_texts))}
+        pcms = [pcm_by_text[t] for t in lines]
+        rule_used = {}
 
         token = (api.AccessToken(key, secret).with_identity("sim-caller").with_name("Sim Caller")
                  .with_grants(api.VideoGrants(room_join=True, room=room_name)).to_jwt())
@@ -233,9 +293,34 @@ class Sim:
             self.ended = self.ended or "no_agent"
         else:
             await self.wait_calm(30)                                   # greeting finished
-        for i, (text, pcm) in enumerate(zip(lines, pcms)):
-            if self.ended:
-                break
+        script_i, i, seen = 0, -1, 0
+        max_turns = reactive["max_turns"] if reactive else len(lines)
+        while not self.ended and i + 1 < max_turns:
+            if reactive:
+                last = " ".join(list(self.transcripts.values())[seen:]).lower().replace("\n", " ")
+                if script_i < len(lines):
+                    text = lines[script_i]; script_i += 1
+                else:
+                    text = None
+                    for ri, (rx, reply, cap) in enumerate(reactive["rules"]):
+                        if re.search(rx, last) and rule_used.get(ri, 0) < cap:
+                            rule_used[ri] = rule_used.get(ri, 0) + 1
+                            text = reply
+                            break
+                    if text is None:
+                        if rule_used.get("fallback", 0) >= 2:
+                            text = CLOSE if self.scenario != "spanish_r" else "No, eso es todo. Gracias, adiós."
+                            if rule_used.get("closed"):
+                                break
+                            rule_used["closed"] = 1
+                        else:
+                            rule_used["fallback"] = rule_used.get("fallback", 0) + 1
+                            text = "Yes, please." if self.scenario != "spanish_r" else "Sí, por favor."
+                pcm = pcm_by_text.get(text) or synth(text, self.env, cache)
+            else:
+                text, pcm = lines[script_i], pcms[script_i]; script_i += 1
+            i += 1
+            seen = len(self.transcripts)
             await asyncio.sleep(0.9)                                   # natural pause before talking
             self.log(f"CALLER {i + 1}: {text}")
             self.speech_frames_sent_end = None
@@ -255,7 +340,7 @@ class Sim:
         if not self.ended:
             await asyncio.sleep(3.0)
         result = {"scenario": self.scenario, "room": room_name, "kind": "simulated_caller_webrtc",
-                  "ended_by": self.ended or "script_finished", "turns": turns,
+                  "ended_by": self.ended or ("script_finished" if not reactive else "reactive_finished"), "turns": turns,
                   "ava_said": list(self.transcripts.values())}
         lat = [t["reply_latency_s"] for t in turns if t["reply_latency_s"] is not None]
         result["latency_p50_s"] = round(statistics.median(lat), 3) if lat else None

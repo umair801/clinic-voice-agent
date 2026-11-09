@@ -29,6 +29,13 @@ NEGATED = re.compile(r"\b(no|none|nothing|nobody)\b[^.!?]{0,30}\b(is|are|has bee
 PENDING_ASK = {"en": "Before you go, {who} still has no appointment. Should I book {who} now, or leave it for another time?",
                "es": "Antes de despedirnos, a {who} todavía le falta una cita. ¿La agendamos ahora o la dejamos para otro momento?"}
 
+# The model's own reasoning must never reach the caller ("The caller said yes, but I should confirm...").
+REASONING = re.compile(r"\b(the|this) (caller|user|patient)\b|\bi should (confirm|ask|check|clarify|verify)\b|"
+                       r"\bi('ll| will) ask (them|the caller)\b|\brather than guess", re.I)
+# "I'm transferring you" is a promise. It is allowed only when a person was asked for or something failed.
+TRANSFER_SAY = re.compile(r"\b(transferring you|connecting you|putting you through|(i('ll| will)|let me|while i) (transfer|connect) you)\b", re.I)
+PROVIDER_ID = re.compile(r"\bprovider\s+#?\d+\b", re.I)
+
 SAFE_LINE = {"en": "One moment while I confirm that with the clinic.",
              "es": "Un momento mientras lo confirmo con la clínica."}
 
@@ -63,7 +70,27 @@ class SentenceGuard:
         self.state, self.on_block, self.buf = state, on_block, ""
         self.asked = False                # a question was already spoken in this reply
 
+    @staticmethod
+    def _speakable(sentence):
+        """Plain spoken text: no markdown, no bullets, no provider id numbers."""
+        s = re.sub(r"[*#`]+", "", sentence)
+        s = re.sub(r"(?m)^\s*[-\u2022]\s+", "", s)
+        s = re.sub(r"\s*\n+\s*", " ", s)
+        return PROVIDER_ID.sub("a provider", s)
+
     def _check(self, sentence):
+        sentence = self._speakable(sentence)
+        if REASONING.search(sentence):
+            if self.on_block:
+                self.on_block(["reasoning text about the caller"], sentence)
+            return ""
+        if TRANSFER_SAY.search(sentence):
+            st = self.state
+            failing = any(p.status in (BookingStatus.PENDING.value, BookingStatus.FAILED.value) for p in st.patients)
+            if not (st.human_requested or st.transfer_requested or failing):
+                if self.on_block:
+                    self.on_block(["transfer promised but the caller did not ask for a person"], sentence)
+                return ""
         if GOODBYE_WORDS.search(sentence) and self.state.has_pending_work() and not self.state.pending_tools:
             # Someone still has no appointment. Never say goodbye over open work; ask once instead (failure 7, spoken side).
             if self.on_block:

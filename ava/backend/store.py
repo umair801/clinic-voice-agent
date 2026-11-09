@@ -52,6 +52,27 @@ def fold_name(name):
     return "".join(ch for ch in n if not unicodedata.combining(ch)).lower()
 
 
+def _sound_key(name):
+    """Spoken-name key: 'Sophia' and 'Sofia', 'Lukas' and 'Lucas' sound the same. Speech-to-text picks one spelling."""
+    import re
+    n = fold_name(name)
+    n = n.replace("ph", "f").replace("ck", "k").replace("c", "k").replace("y", "i")
+    return re.sub(r"(.)\1+", r"\1", n)
+
+
+def pick_matches(rows, first_name):
+    """Records for one exact date of birth. Exact (accent-insensitive) first-name match wins; otherwise a name that
+    sounds the same or is within a small spelling distance. The date of birth must always match exactly."""
+    from difflib import SequenceMatcher
+    want = fold_name(first_name)
+    exact = [x for x in rows if fold_name(x["first_name"]) == want]
+    if exact:
+        return exact
+    k = _sound_key(first_name)
+    return [x for x in rows if _sound_key(x["first_name"]) == k
+            or (len(k) >= 4 and SequenceMatcher(None, _sound_key(x["first_name"]), k).ratio() >= 0.86)]
+
+
 class SQLiteStore:
     def __init__(self, path=":memory:"):
         self.lock = threading.Lock()
@@ -79,8 +100,7 @@ class SQLiteStore:
     # ---- reads ------------------------------------------------------------
     def identify(self, first_name, dob):
         r = self.db.execute("SELECT * FROM patients WHERE dob=?", (dob,)).fetchall()
-        want = fold_name(first_name)
-        return [dict(x) for x in r if fold_name(x["first_name"]) == want]
+        return pick_matches([dict(x) for x in r], first_name)
 
     def get_by_key(self, key):
         r = self.db.execute("SELECT * FROM appointments WHERE idempotency_key=?", (key,)).fetchone()
@@ -169,8 +189,7 @@ class SupabaseStore:
 
     def identify(self, first_name, dob):
         rows = self._get("cva_patients", {"dob": f"eq.{dob}", "select": "*"})
-        want = fold_name(first_name)
-        return [x for x in rows if fold_name(x["first_name"]) == want]
+        return pick_matches(rows, first_name)
 
     def get_by_key(self, key):
         rows = self._get("cva_appointments", {"idempotency_key": f"eq.{key}", "select": "*"})

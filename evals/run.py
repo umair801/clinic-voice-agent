@@ -652,6 +652,18 @@ async def s_backend_stores_call_logs():
     return r.status_code == 200 and r.json()["stored"] == 2 and n == 2, f"status {r.status_code}, rows stored {n}"
 
 
+async def s_call_end_flushes_the_log_tail():
+    """Real probe call: the last events (call_end) never reached Supabase because the process exited first."""
+    import tempfile
+    from ava.telemetry import CallLogger, RemoteSink
+    got = []
+    sink = RemoteSink("http://example.invalid", post=lambda rows: got.extend(rows), interval=3600)
+    log = CallLogger("call_flush_test", log_dir=tempfile.mkdtemp(), sink=sink)
+    log.event("identify_done", ms=40, found=True)
+    log.event("call_end", turns=1, booked=1)          # no waiting for the timer
+    return [r.get("event") for r in got] == ["identify_done", "call_end"], f"events sent at call end: {[r.get('event') for r in got]}"
+
+
 SCENARIOS = [(n[2:], f) for n, f in list(globals().items()) if n.startswith("s_") and callable(f)]
 
 

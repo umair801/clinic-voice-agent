@@ -37,6 +37,8 @@ class RemoteSink:
         self.interval = interval
         self._t = threading.Thread(target=self._run, name="calllog-sink", daemon=True)
         self._t.start()
+        import atexit
+        atexit.register(self.flush)         # the worker process can stop right after the last event
 
     def _http_post(self, rows):
         import httpx
@@ -173,6 +175,11 @@ class CallLogger:
     def event(self, name, level="info", **data):
         row = {"kind": "event", "call_id": self.call_id, "ts": time.time(), "event": name, "level": level, **data}
         self._write(row)
+        if name in ("call_end", "session_close") and self.sink:
+            try:
+                self.sink.flush()           # the call is over: send the tail now, before the process exits
+            except Exception:
+                pass
         if level == "error":
             self.alert(name, data)
 

@@ -1,7 +1,7 @@
 {
   "label": "orchestration evals, stub model",
-  "passed": 53,
-  "total": 53,
+  "passed": 54,
+  "total": 54,
   "results": [
     {
       "name": "family_with_lost_response",
@@ -196,7 +196,7 @@
     {
       "name": "tool_ms_is_measured",
       "passed": true,
-      "detail": "identify 0.40 ms, after find_slots 1.95 ms"
+      "detail": "identify 0.23 ms, after find_slots 1.02 ms"
     },
     {
       "name": "collect_step_asks_for_parallel_calls",
@@ -267,6 +267,11 @@
       "name": "backend_stores_call_logs",
       "passed": true,
       "detail": "status 200, rows stored 2"
+    },
+    {
+      "name": "call_end_flushes_the_log_tail",
+      "passed": true,
+      "detail": "events sent at call end: ['identify_done', 'call_end']"
     }
   ]
 }

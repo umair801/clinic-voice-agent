@@ -41,6 +41,10 @@ class CallbackReq(BaseModel):
     note: str
 
 
+class CallLogReq(BaseModel):
+    rows: list[dict]
+
+
 def create_app(store=None, fault=None):
     app = FastAPI(title="Clinic backend tools", docs_url=None, redoc_url=None, openapi_url=None)  # no public /docs
     fault = fault or Fault.from_env()
@@ -56,7 +60,7 @@ def create_app(store=None, fault=None):
 
     @app.get("/healthz")
     def healthz():
-        return {"ok": True}
+        return {"ok": True, "store": type(svc.store).__name__}   # lets us verify the durable store is active, no secrets
 
     @app.post("/v1/identify_patient", dependencies=[Depends(auth)])
     def identify(req: IdentifyReq):
@@ -83,6 +87,16 @@ def create_app(store=None, fault=None):
     def transfer(req: TransferReq):
         svc.store.log_transfer(req.call_id, req.reason)
         return {"logged": True}
+
+    @app.post("/v1/calllog", dependencies=[Depends(auth)])
+    def calllog(req: CallLogReq):
+        """Durable call logs from the voice worker. Content is synthetic test data only. Never fails the caller path."""
+        rows = req.rows[:200]
+        try:
+            svc.store.log_rows(rows)
+        except Exception:
+            raise HTTPException(503, "log store unavailable")
+        return {"stored": len(rows)}
 
     @app.post("/v1/callback", dependencies=[Depends(auth)])
     def callback(req: CallbackReq):

@@ -615,6 +615,43 @@ async def s_real_call_rule_talk_never_spoken():
     return "rules" not in out.lower() and "CALL LANGUAGE" not in out and "date of birth" in out, f"spoken: {out.strip()!r}"
 
 
+async def s_call_log_sink_never_breaks_a_call():
+    """Logging must never hurt a caller: a dead log store, a full queue and a normal flush."""
+    import tempfile
+    from ava.telemetry import CallLogger, RemoteSink
+    calls = []
+
+    def bad_post(rows):
+        calls.append(len(rows))
+        raise RuntimeError("log store down")
+
+    sink = RemoteSink("http://example.invalid", post=bad_post, interval=3600)
+    log = CallLogger("call_sink_test", log_dir=tempfile.mkdtemp(), sink=sink)
+    log.event("identify_done", ms=40, found=True)       # must not raise even though the sink is broken
+    sink.flush()
+    dead_ok = sink.dropped == 1 and calls == [1, 1, 1]  # three tries, then dropped, no exception
+    good = []
+    sink2 = RemoteSink("http://example.invalid", post=lambda rows: good.append(rows), interval=3600)
+    log2 = CallLogger("call_sink_test2", log_dir=tempfile.mkdtemp(), sink=sink2)
+    log2.event("call_start", release="x")
+    log2.event("call_end", turns=1)
+    sink2.flush()
+    ok2 = len(good) == 1 and len(good[0]) == 2 and sink2.sent == 2
+    return dead_ok and ok2, f"broken sink: dropped {sink.dropped} after {len(calls)} tries without raising; working sink sent {sink2.sent}"
+
+
+async def s_backend_stores_call_logs():
+    from fastapi.testclient import TestClient
+    from ava.backend.app import create_app
+    from ava.backend.store import SQLiteStore
+    st = SQLiteStore()
+    c = TestClient(create_app(store=st))
+    r = c.post("/v1/calllog", json={"rows": [{"call_id": "c1", "ts": 1.0, "kind": "event", "event": "call_start"},
+                                              {"call_id": "c1", "ts": 2.0, "kind": "turn"}]})
+    n = st.db.execute("SELECT COUNT(*) FROM call_logs").fetchone()[0]
+    return r.status_code == 200 and r.json()["stored"] == 2 and n == 2, f"status {r.status_code}, rows stored {n}"
+
+
 SCENARIOS = [(n[2:], f) for n, f in list(globals().items()) if n.startswith("s_") and callable(f)]
 
 

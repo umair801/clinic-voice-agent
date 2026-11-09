@@ -16,6 +16,85 @@ STDOUT_LOGS = os.environ.get("CALLLOG_STDOUT") == "1" or any(
 LOG_DIR = os.environ.get("CALL_LOG_DIR", os.path.join(ROOT, "logs", "calls"))
 
 
+class RemoteSink:
+    """Sends call-log rows to the backend (which stores them in Supabase), so logs survive a redeploy.
+
+    Runs in a background thread. It batches rows, retries a failed batch a few times, and NEVER raises or blocks
+    into a live call: a logging problem must not hurt a caller. The worker needs only BACKEND_URL and
+    BACKEND_API_KEY, which it already has for the booking tools.
+    """
+    MAX_QUEUE = 5000
+
+    def __init__(self, base_url, api_key="", post=None, interval=2.0):
+        import queue
+        import threading
+        self.url = base_url.rstrip("/") + "/v1/calllog"
+        self.headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+        self.q = queue.Queue(self.MAX_QUEUE)
+        self.dropped = 0
+        self.sent = 0
+        self._post = post or self._http_post
+        self.interval = interval
+        self._t = threading.Thread(target=self._run, name="calllog-sink", daemon=True)
+        self._t.start()
+
+    def _http_post(self, rows):
+        import httpx
+        r = httpx.post(self.url, json={"rows": rows}, headers=self.headers, timeout=5)
+        r.raise_for_status()
+
+    def put(self, row):
+        try:
+            self.q.put_nowait(row)
+        except Exception:
+            self.dropped += 1
+
+    def _drain(self):
+        rows = []
+        while len(rows) < 100:
+            try:
+                rows.append(self.q.get_nowait())
+            except Exception:
+                break
+        return rows
+
+    def _run(self):
+        while True:
+            time.sleep(self.interval)
+            self.flush()
+
+    def flush(self):
+        rows = self._drain()
+        while rows:
+            for attempt in range(3):
+                try:
+                    self._post(rows)
+                    self.sent += len(rows)
+                    break
+                except Exception:
+                    time.sleep(0.5 * (attempt + 1))
+            else:
+                self.dropped += len(rows)
+            rows = self._drain()
+
+
+_SINK = None
+
+
+def default_sink():
+    """One shared sink for the process, only on Railway (or when CALLLOG_REMOTE=1) and only if the backend is configured."""
+    global _SINK
+    if _SINK is not None:
+        return _SINK or None
+    on = os.environ.get("CALLLOG_REMOTE") == "1" or STDOUT_LOGS
+    base = os.environ.get("BACKEND_URL", "")
+    if on and base and "localhost" not in base and os.environ.get("CALLLOG_REMOTE") != "0":
+        _SINK = RemoteSink(base, os.environ.get("BACKEND_API_KEY", ""))
+    else:
+        _SINK = False
+    return _SINK or None
+
+
 def load_pricing(path=PRICING_PATH):
     with open(path) as f:
         return json.load(f)
@@ -67,8 +146,9 @@ class TurnRecord:
 
 
 class CallLogger:
-    def __init__(self, call_id, log_dir=None, alert_webhook=None):
+    def __init__(self, call_id, log_dir=None, alert_webhook=None, sink=None):
         self.call_id = call_id
+        self.sink = sink if sink is not None else default_sink()
         self.dir = log_dir or LOG_DIR
         os.makedirs(self.dir, exist_ok=True)
         self.path = os.path.join(self.dir, f"{call_id}.jsonl")
@@ -82,6 +162,8 @@ class CallLogger:
             # On Railway the disk is wiped on redeploy, so each row is also printed. Download the service logs
             # and rebuild the call files with scripts/import_railway_logs.py.
             print("CALLLOG " + line, flush=True)
+        if self.sink:
+            self.sink.put(obj)
 
     def turn(self, rec: TurnRecord):
         if not rec.cost_usd and rec.tier and (rec.prompt_tokens or rec.completion_tokens):

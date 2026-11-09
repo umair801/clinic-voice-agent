@@ -91,6 +91,7 @@ class SQLiteStore:
             call_id TEXT, patient_id TEXT, slot_id TEXT, provider_id TEXT, start TEXT, status TEXT, created_at TEXT);
         CREATE TABLE IF NOT EXISTS transfers(id INTEGER PRIMARY KEY AUTOINCREMENT, call_id TEXT, reason TEXT, created_at TEXT);
         CREATE TABLE IF NOT EXISTS callbacks(id INTEGER PRIMARY KEY AUTOINCREMENT, call_id TEXT, note TEXT, created_at TEXT);
+        CREATE TABLE IF NOT EXISTS call_logs(id INTEGER PRIMARY KEY AUTOINCREMENT, call_id TEXT, ts REAL, kind TEXT, event TEXT, data TEXT);
         """)
         if not c.execute("SELECT 1 FROM patients LIMIT 1").fetchone():
             c.executemany("INSERT INTO patients VALUES (?,?,?,?)", seed_patients())
@@ -168,6 +169,12 @@ class SQLiteStore:
         with self.lock, self.db:
             self.db.execute("INSERT INTO callbacks(call_id,note,created_at) VALUES (?,?,?)", (call_id, note, "n/a"))
 
+    def log_rows(self, rows):
+        import json
+        with self.lock, self.db:
+            self.db.executemany("INSERT INTO call_logs(call_id,ts,kind,event,data) VALUES (?,?,?,?,?)",
+                                [(r.get("call_id"), r.get("ts"), r.get("kind"), r.get("event"), json.dumps(r)) for r in rows])
+
 
 class SupabaseStore:
     """Same interface over Supabase REST. NOT RUN against a live project yet.
@@ -215,3 +222,7 @@ class SupabaseStore:
 
     def log_callback(self, call_id, note):
         self.http.post(f"{self.base}/cva_callbacks", headers=self.h, json={"call_id": call_id, "note": note}).raise_for_status()
+
+    def log_rows(self, rows):
+        body = [{"call_id": r.get("call_id"), "ts": r.get("ts"), "kind": r.get("kind"), "event": r.get("event"), "data": r} for r in rows]
+        self.http.post(f"{self.base}/cva_call_logs", headers={**self.h, "Prefer": "return=minimal"}, json=body).raise_for_status()

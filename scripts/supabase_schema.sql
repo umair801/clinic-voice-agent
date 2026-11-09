@@ -55,3 +55,12 @@ exception when unique_violation then
   select * into existing from cva_appointments where idempotency_key = p_key;
   return jsonb_build_object('outcome','replay','record',to_jsonb(existing));
 end $$;
+
+-- Durable call logs (turn and event rows from the voice worker). Read with scripts/fetch_calllogs.py.
+create table if not exists cva_call_logs (
+  id bigserial primary key, call_id text, ts double precision, kind text, event text, data jsonb,
+  created_at timestamptz default now()
+);
+create index if not exists cva_call_logs_call on cva_call_logs (call_id, ts);
+create index if not exists cva_call_logs_ts on cva_call_logs (ts);
+alter table cva_call_logs enable row level security;

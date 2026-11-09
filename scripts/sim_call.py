@@ -118,7 +118,7 @@ REACTIVE = {
     "leave_r": {"seed": ["Hi, my name is Maria Alvarez and my date of birth is March fourteenth, nineteen eighty two.",
                          "I also need appointments for my two children. Lucas, born June second, two thousand thirteen, and Sofia, born September twenty first, two thousand sixteen."],
                 "rules": _CLOSE_RULE + _DOB_RULES + [_KIND, _KIDS,
-                    (r"sofia.{0,80}(same time|would you like|work for|time for|book|slot)", "No, skip Sofia for now. That is everything. Goodbye.", 1),
+                    (r"((for sofia|sofia.{0,40}(next|open|same|slot|time)).{0,160}(would (you|that|it)|work for|same time|time for)|(would|work).{0,60}for sofia)", "No, skip Sofia for now. That is everything. Goodbye.", 1),
                     (r"(leave|left|without).{0,40}(sofia|her)|sofia.{0,40}(leave|left|without)", "Yes, leave her without one. Goodbye.", 2)] + _TAIL_RULES,
                 "max_turns": 16},
     "simple_r": {"seed": ["Hello, my name is Maria Alvarez, born March fourteenth, nineteen eighty two."],

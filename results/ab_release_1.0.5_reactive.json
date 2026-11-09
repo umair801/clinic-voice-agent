@@ -1,0 +1,47 @@
+{
+  "label": "simulated-caller results (WebRTC, synthetic voice, no phone network). Not phone calls, not production. Logs read from Supabase.",
+  "release": "1.0.5",
+  "calls": 12,
+  "note": "12 calls include 1 probe call; 11 scripted batch calls.",
+  "backend_confirmed": {
+    "family": {
+      "calls": 3,
+      "all_three_booked": 3
+    },
+    "si_and_name": {
+      "calls": 2,
+      "booked_both": 1,
+      "other_cause": "caller never named the time; reasoning guard fired 3 times"
+    },
+    "spanish": {
+      "calls": 2,
+      "booked": 2,
+      "language_switch_events": "explicit request only"
+    },
+    "simple": {
+      "calls": 2,
+      "booked": 2
+    },
+    "leave_sofia": {
+      "calls": 2,
+      "valid": false,
+      "note": "caller never said skip Sofia (script rule did not match Ava's wording); both calls booked all three. Rule fixed after this batch, not yet re-measured."
+    }
+  },
+  "appointments_created": 22,
+  "duplicate_appointments": 0,
+  "duplicate_slots": 0,
+  "book_retries": 0,
+  "false_booked_claims": 0,
+  "worker_side_turns": 86,
+  "reply_latency_p50_s": 1.79,
+  "reply_latency_p95_s": 2.76,
+  "eou_delay_p50_s": 0.66,
+  "llm_ttft_p50_s": 0.83,
+  "llm_cost_per_min_usd": 0.00083,
+  "cost_scope": "LLM tokens only, small model, 23.7 call minutes",
+  "tool_ms_p50": 199.1,
+  "tool_ms_max": 1384.0,
+  "tool_ms_note": "backend on Supabase (was about 39ms on in-memory SQLite)",
+  "tiers": "small model on all turns, no fallback"
+}

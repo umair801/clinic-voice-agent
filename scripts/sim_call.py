@@ -103,6 +103,7 @@ _DOB_RULES = [
 ]
 _KIND = (r"what kind|what type|reason for|appointment do you need|what would you like to book|appointment for|help you today|can i help", "A general checkup, please.", 3)
 _TAIL_RULES = [
+    (r"\b(9|10|11|12):?\d{0,2}\b.{0,60}\b(or|and)\b.{0,40}\b(9|10|11|12)|which one|pick (one|a time)|name (a|one|the) time|first option|second option", "The first one, please.", 6),
     (r"is that (right|correct)|did you mean|correct\?|right\?", "Yes, that is right.", 3),
     (r"which (time|slot)|work for|would you like|should i book|same time|book (it|that|him|her)|go ahead|shall i|offer that", "Yes, that works. Please book it.", 8),
 ]

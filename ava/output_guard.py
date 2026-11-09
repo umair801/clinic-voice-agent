@@ -31,7 +31,9 @@ PENDING_ASK = {"en": "Before you go, {who} still has no appointment. Should I bo
 
 # The model's own reasoning must never reach the caller ("The caller said yes, but I should confirm...").
 REASONING = re.compile(r"\b(the|this) (caller|user|patient)\b|\bi should (confirm|ask|check|clarify|verify)\b|"
-                       r"\bi('ll| will) ask (them|the caller)\b|\brather than guess", re.I)
+                       r"\bi('ll| will) ask (them|the caller)\b|\brather than guess|"
+                       r"\bthe rules say\b|\bCALL LANGUAGE\b|\bCURRENT STEP\b|\bsystem (prompt|instruction)s?\b|\bmy instructions\b|"
+                       r"\bi stay in (english|spanish)\b|\bit says (english|spanish)\b", re.I)
 # "I'm transferring you" is a promise. It is allowed only when a person was asked for or something failed.
 TRANSFER_SAY = re.compile(r"\b(transferring you|connecting you|putting you through|(i('ll| will)|let me|while i) (transfer|connect) you)\b", re.I)
 PROVIDER_ID = re.compile(r"\bprovider\s+#?\d+\b", re.I)

@@ -8,9 +8,9 @@
     "small_share": 0.9
   },
   "turns_per_min": 1.65,
-  "new_input_tokens_per_turn": 2184,
-  "new_llm_usd_per_min": 0.00119,
+  "new_input_tokens_per_turn": 2210,
+  "new_llm_usd_per_min": 0.0012,
   "baseline_llm_usd_per_min_same_method": 0.13512,
-  "modeled_reduction_x": 113.6,
+  "modeled_reduction_x": 112.4,
   "scope": "LLM tokens only. STT, TTS, telephony are not included and usually dominate once the LLM bill is small."
 }

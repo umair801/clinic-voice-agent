@@ -605,6 +605,16 @@ async def s_real_call_sophia_matches_sofia():
     return a["found"] and b["found"] and not c["found"] and not d["found"], f"Sophia {a['found']}, Lukas {b['found']}, wrong DOB {c['found']}, Mario {d['found']}"
 
 
+async def s_real_call_rule_talk_never_spoken():
+    """Real simulated call: 'However, the rules say to speak the language named on the CALL LANGUAGE line only...'"""
+    core, st = make()
+    from ava.output_guard import SentenceGuard
+    g = SentenceGuard(core.state)
+    out = g.feed("However, the rules say to speak the language named on the CALL LANGUAGE line only. It says English. "
+                 "So I stay in English. What is your date of birth? ") + g.flush()
+    return "rules" not in out.lower() and "CALL LANGUAGE" not in out and "date of birth" in out, f"spoken: {out.strip()!r}"
+
+
 SCENARIOS = [(n[2:], f) for n, f in list(globals().items()) if n.startswith("s_") and callable(f)]
 
 

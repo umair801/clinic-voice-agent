@@ -1,0 +1,21 @@
+{
+  "label": "Simulated-caller test calls (WebRTC, synthetic voice, synthetic patients). Not phone calls, not production, no real patients.",
+  "failure": "1. identify_patient takes about 7.8s with dead silence",
+  "injection": "backend FAULT_IDENTIFY_DELAY_S=7.8 (test only, removed afterwards)",
+  "before_release_1_0_5_budget_4s_x2": {
+    "calls": 2,
+    "lookup_outcome": "BackendTimeout after 8.25s and 8.29s (two 4s attempts)",
+    "appointments_booked": 0,
+    "note": "bounded wait, but a lookup that would have succeeded at 7.8s was cut off"
+  },
+  "after_one_9s_attempt_logged_filler": {
+    "calls": 2,
+    "lookup_ms": [8043.4, 8027.7],
+    "filler_spoken_at_s_after_lookup_start": [1.0, 6.0],
+    "filler_events_per_call": 2,
+    "appointments_booked": [1, 1],
+    "false_booked_claims": 0,
+    "duplicates": 0
+  },
+  "not_measured": "audio silence between filler lines (needs the recording); real phone calls"
+}

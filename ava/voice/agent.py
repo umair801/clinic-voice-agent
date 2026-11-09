@@ -162,6 +162,13 @@ class AvaAgent(Agent):
                 return FILLER_BY_TOOL[n][self.core.state.language] + " "
         return ""
 
+    def _logged_filler(self, text, tool):
+        """Filler source that writes a filler_spoken event each time the line is actually scheduled to play."""
+        def source(step):
+            self.core.log.event("filler_spoken", text=text, tool=tool, step=step)
+            return text
+        return source
+
     def _record(self, name):
         self.last_tools.append(name)
 
@@ -177,7 +184,7 @@ class AvaAgent(Agent):
         """Look up a patient. patient_key is 'self' for the caller, then 'child1', 'child2', or 'person2'. date_of_birth is YYYY-MM-DD."""
         self._record("identify_patient")
         lang = self.core.state.language
-        async with context.with_filler(FILLER[lang], delay=1.0, interval=4.0, max_steps=2):
+        async with context.with_filler(self._logged_filler(FILLER[lang], "identify_patient"), delay=1.0, interval=4.0, max_steps=3):
             return await self.core.identify_patient(patient_key, first_name, date_of_birth)
 
     @function_tool

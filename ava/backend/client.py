@@ -11,7 +11,7 @@ import httpx
 from ava.backend.booking import BackendTimeout, BookResult
 from ava.backend.reliable import TransportError
 
-IDENTIFY_TIMEOUT_S = 4.0
+IDENTIFY_TIMEOUT_S = 9.0   # one attempt; the filler line repeats every 4s while it runs
 
 
 class InProcessTransport:
@@ -58,13 +58,8 @@ class HttpTransport:
         return r.json()
 
     async def identify(self, first_name, dob):
-        # read-only, so one retry is always safe
-        for i in range(2):
-            try:
-                return await self._call("POST", "/v1/identify_patient", IDENTIFY_TIMEOUT_S, json={"first_name": first_name, "dob": dob})
-            except (BackendTimeout, TransportError):
-                if i == 1:
-                    raise
+        # read-only. One long attempt beats two short ones: a 7.8s lookup that would succeed must not be cut off at 4s.
+        return await self._call("POST", "/v1/identify_patient", IDENTIFY_TIMEOUT_S, json={"first_name": first_name, "dob": dob})
 
     async def book(self, call_id, patient_id, slot_id, key):
         d = await self._call("POST", "/v1/book_appointment", 6.0, json={

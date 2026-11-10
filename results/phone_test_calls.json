@@ -1,0 +1,27 @@
+{
+  "label": "Real phone test call(s) to the test number from a personal phone. Synthetic patients only, no real patients, not production. One call so far: not enough to claim stability.",
+  "release": "1.0.5 plus the code-only name fix",
+  "calls": [
+    {
+      "date": "2026-11-11",
+      "call_id": "call_4d3c41e6ed",
+      "duration_s": 154,
+      "ended_by": "agent after the caller said goodbye and the agent said goodbye",
+      "people_booked": 3,
+      "appointments_in_database": 3,
+      "duplicates": 0,
+      "false_booked_claims": 0,
+      "language": "en on every turn",
+      "model_tier": "small only, 0 fallback turns",
+      "guard_events": [
+        "reasoning text ('The caller said yes for Maria.') blocked before the caller heard it",
+        "goodbye before the caller said goodbye blocked"
+      ],
+      "reply_latency_s": {"turns_measured": 9, "p50": 2.59, "max": 2.8, "target_p50": 1.5, "target_met": false},
+      "model_first_token_p50_s": 1.59,
+      "llm_cost_per_minute_usd": 0.0012,
+      "cost_note": "LLM only; STT, TTS and telephony not included"
+    }
+  ],
+  "not_measured": "stability across many calls (earlier calls from the same phone dropped after 48 to 93 seconds, cause unknown), human transfer, audio silence"
+}

@@ -1,0 +1,9 @@
+{
+  "label": "Simulated-caller test calls (WebRTC, synthetic voice). Not phone calls, not production.",
+  "release": "1.0.5",
+  "scenario": "provider",
+  "runs": 3,
+  "result": "3 of 3 answered with the same two pediatric doctors and centers, matching a direct knowledge-base lookup (Dr. Elena Kim at Lakeview, Dr. Grace Kim at Riverton, Mon-Fri 8 to 5, accepting new patients). No invented names.",
+  "reply_latency_p50_s": [2.82, 2.58, 2.55],
+  "note": "latency is above the 1.5s target"
+}

@@ -23,7 +23,9 @@ Simulated-caller test results (release 1.0.5; a scripted synthetic caller over W
 - With a lost booking response injected, the agent confirmed the booking from the clinic record, made one attempt, and the database holds one appointment.
 - In a 4-call run, 8 of 8 appointments were booked exactly once each, with no duplicates and no language switch on "Sí".
 
-Not claimed yet: reply latency (median about 1.9s, target 1.5s), real phone-call results, and human transfer on a live line. Failure-by-failure table: `docs/BEFORE_AFTER.md`.
+One real phone test call (synthetic patients): a parent and two children were each booked once, and the call ran 2 minutes 34 seconds. That is one call, so no stability claim is made.
+
+Not claimed yet: reply latency (median about 1.9s in simulated runs and 2.6s on the one phone call, target 1.5s), phone-call stability across many calls, and human transfer on a live line. Failure-by-failure table: `docs/BEFORE_AFTER.md`.
 
 ## Try it with a synthetic patient
 

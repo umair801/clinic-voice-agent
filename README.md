@@ -19,7 +19,11 @@ Built for community health centers and specialty practices. All patient data is 
 
 Orchestration evals: 55 of 55 pass (run against a stub model; they test the safeguards, not the language model). See `results/evals.json`.
 
-Test-call results: PENDING. Development calls so far ran from a laptop, so no latency or cost number is claimed until the 20+ synthetic test calls run on the deployed service. Failure-by-failure table: `docs/BEFORE_AFTER.md`.
+Simulated-caller test results (release 1.0.5; a scripted synthetic caller over WebRTC, not phone calls, not production, no real patients):
+- With a lost booking response injected, the agent confirmed the booking from the clinic record, made one attempt, and the database holds one appointment.
+- In a 4-call run, 8 of 8 appointments were booked exactly once each, with no duplicates and no language switch on "Sí".
+
+Not claimed yet: reply latency (median about 1.9s, target 1.5s), real phone-call results, and human transfer on a live line. Failure-by-failure table: `docs/BEFORE_AFTER.md`.
 
 ## Try it with a synthetic patient
 

@@ -605,6 +605,14 @@ async def s_real_call_sophia_matches_sofia():
     return a["found"] and b["found"] and not c["found"] and not d["found"], f"Sophia {a['found']}, Lukas {b['found']}, wrong DOB {c['found']}, Mario {d['found']}"
 
 
+async def s_real_call_record_spelling_is_spoken():
+    """Real call: speech-to-text wrote 'Sophia'. After the match, state and tool result carry the record name 'Sofia'."""
+    core, st = make()
+    a = await core.identify_patient("child2", "Sophia", "2016-09-21")
+    pe = core.state.patient("child2")
+    return a.get("name") == "Sofia" and pe.first_name == "Sofia", f"tool name {a.get('name')!r}, state name {pe.first_name!r}"
+
+
 async def s_real_call_rule_talk_never_spoken():
     """Real simulated call: 'However, the rules say to speak the language named on the CALL LANGUAGE line only...'"""
     core, st = make()

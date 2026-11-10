@@ -81,7 +81,9 @@ class AvaCore:
         self.log.event("identify_done", ms=round((time.time() - t0) * 1000), found=bool(res.get("found")))
         if res.get("found"):
             p.patient_id = res["patient_id"]
-            return {"found": True, "key": key}
+            name = res.get("first_name") or p.first_name
+            p.first_name = name          # speak the record spelling, not the speech-to-text guess
+            return {"found": True, "key": key, "name": name}
         return {"found": False, "ambiguous": bool(res.get("ambiguous")),
                 "say": "No matching record. Ask the caller to repeat the spelling and date of birth, or offer a transfer."}
 

@@ -1,7 +1,7 @@
 {
   "label": "orchestration evals, stub model",
-  "passed": 54,
-  "total": 54,
+  "passed": 55,
+  "total": 55,
   "results": [
     {
       "name": "family_with_lost_response",
@@ -196,7 +196,7 @@
     {
       "name": "tool_ms_is_measured",
       "passed": true,
-      "detail": "identify 0.49 ms, after find_slots 2.33 ms"
+      "detail": "identify 0.22 ms, after find_slots 1.03 ms"
     },
     {
       "name": "collect_step_asks_for_parallel_calls",
@@ -252,6 +252,11 @@
       "name": "real_call_sophia_matches_sofia",
       "passed": true,
       "detail": "Sophia True, Lukas True, wrong DOB False, Mario False"
+    },
+    {
+      "name": "real_call_record_spelling_is_spoken",
+      "passed": true,
+      "detail": "tool name 'Sofia', state name 'Sofia'"
     },
     {
       "name": "real_call_rule_talk_never_spoken",

@@ -1,0 +1,16 @@
+{
+  "label": "Simulated-caller test calls (WebRTC, synthetic voice, synthetic patients). Not phone calls, not production, no real patients.",
+  "failure": "5. book_appointment times out but the agent says booked, and the backend retries silently",
+  "injection": "backend FAULT_COMMIT_THEN_TIMEOUT=1: the first booking is COMMITTED, then the response is lost (test only, set back to 0 afterwards)",
+  "release": "1.0.5",
+  "faulted_call": {
+    "events": ["book_unknown_outcome (BackendTimeout, attempt 1)", "reconcile (record says booked, attempt 1)"],
+    "booking_attempts": 1,
+    "blind_retries": 0,
+    "status_returned_to_model": "booked, confirmed by reading the record, not by guessing",
+    "appointments_in_database": 1,
+    "duplicates": 0
+  },
+  "control_call": {"book_response": "booked / created", "appointments_in_database": 1, "duplicates": 0},
+  "not_measured": "the exact words spoken on the faulted call (call log stores events, not transcripts); the pending/failed paths live (covered by offline evals only); real phone calls"
+}

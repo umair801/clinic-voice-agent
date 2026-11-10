@@ -1,0 +1,19 @@
+{
+  "label": "Simulated-caller test calls (WebRTC, synthetic voice, synthetic patients). Not phone calls, not production, no real patients.",
+  "release": "1.0.5",
+  "runs": {"leave_r": 2, "si_r": 2},
+  "leave_r": "2 of 2: Maria and Lucas booked, Sofia skipped on request, no duplicates, goodbye only after the summary",
+  "si_r": "2 of 2: the 'Si.' message did not switch the call to Spanish (language stayed en on every turn); Maria and Sofia booked, no duplicates",
+  "all_four_calls": {
+    "appointments_per_call": [2, 2, 2, 2],
+    "duplicate_appointments": 0,
+    "language_switches": 0,
+    "false_booked_claims_blocked": 0,
+    "fallback_turns": 0,
+    "model_tier": "small only"
+  },
+  "latency_worker_side_s": {"turns_measured": 35, "p50": 1.99, "p95": 3.78, "target_p50": 1.5, "target_met": false},
+  "llm_cost_per_minute_usd": 0.00081,
+  "cost_note": "LLM only over 10.2 call minutes; STT, TTS and telephony are not included",
+  "known_issue": "Ava repeats the speech-to-text spelling 'Sophia' instead of the record name 'Sofia'"
+}

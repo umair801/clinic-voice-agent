@@ -9,12 +9,19 @@ main{max-width:860px;margin:0 auto;padding:24px 16px 64px}h1{font-size:1.5rem;ma
 p.sub{color:var(--mut);margin:.3em 0}.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0}
 table{width:100%;border-collapse:collapse;font-size:.92rem}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
 .ok{color:var(--ok);font-weight:600}.bad{color:var(--bad);font-weight:600}.pend{color:var(--pend);font-weight:600}.mut{color:var(--mut)}
+.btn{font:inherit;font-weight:600;border:0;border-radius:8px;padding:10px 18px;cursor:pointer;background:var(--ok);color:#fff}
+.btn.stop{background:var(--bad)}.btn[disabled]{opacity:.55;cursor:default}
+#wc{display:none}#wcstat{margin:.6em 0 0;color:var(--mut)}
 @media(max-width:560px){th:nth-child(3),td:nth-child(3){display:none}}
 </style></head><body><main>
 <h1>Clinic phone agent: no silent calls, no false bookings</h1>
 <p class="sub">Clinics lose callers to dead air and wrong bookings. This agent answers inbound calls, books every family member exactly once, and says "booked" only when the clinic record confirms it.</p>
 <p class="sub">For community health centers and specialty practices. All patient data on this page is synthetic.</p>
 <div class="card" id="status">Loading results...</div>
+<div class="card" id="wc"><b>Talk to Ava now</b>
+<p class="sub">A live test call in your browser, no phone needed. Ava is an AI voice agent. Use headphones, allow the microphone, and use only the synthetic names below. Calls are logged for testing and end after a few minutes.</p>
+<button class="btn" id="wcbtn">Start test call</button>
+<p id="wcstat" role="status"></p></div>
 <h2>Try it with a synthetic patient</h2>
 <div class="card"><p class="sub">The agent books only patients who exist in the clinic record, and every record here is synthetic. Say a first name and date of birth from this list. Unknown names get "no matching record", never an invented one. Please do not give real personal details.</p>
 <table><tbody><tr><td>Maria</td><td>March 14, 1982</td><td class="mut">parent</td></tr><tr><td>Lucas</td><td>June 2, 2013</td><td class="mut">child</td></tr><tr><td>Sofia</td><td>September 21, 2016</td><td class="mut">child</td></tr></tbody></table></div>
@@ -45,4 +52,42 @@ fetch("/api/results/evals").then(r=>r.json()).catch(()=>({})).then(e=>{
  h+=`<div style="margin-top:8px"><a href="https://github.com/umair801/clinic-voice-agent">GitHub: code, eval results, runbook</a></div>`;
  s.innerHTML=h;});
 document.getElementById("note").textContent="Baseline column is a simulation of the reported failing call, not a real call. Results are test calls with synthetic patients, not production calls with real patients.";
-</script></main></body></html>
+</script></main><script src="https://cdn.jsdelivr.net/npm/livekit-client@2.15.0/dist/livekit-client.umd.min.js"></script>
+<script>
+(function(){
+ const box=document.getElementById("wc"),btn=document.getElementById("wcbtn"),st=document.getElementById("wcstat");
+ let room=null,roomName=null,live=false,timer=null;
+ const say=t=>{st.textContent=t};
+ fetch("/api/web_call/status").then(r=>r.json()).then(j=>{if(j.enabled&&window.LivekitClient)box.style.display="block"}).catch(()=>{});
+ async function end(){
+  live=false;clearInterval(timer);
+  const n=roomName;roomName=null;
+  try{if(room)await room.disconnect()}catch(e){}
+  room=null;document.querySelectorAll("audio[data-ava]").forEach(a=>a.remove());
+  if(n){try{await fetch("/api/web_call/end",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({room:n})})}catch(e){}}
+  btn.textContent="Start test call";btn.classList.remove("stop");btn.disabled=false;
+ }
+ btn.addEventListener("click",async()=>{
+  if(live){say("Call ended.");return end()}
+  btn.disabled=true;say("Connecting...");
+  try{
+   const r=await fetch("/api/web_call",{method:"POST"});
+   if(!r.ok){let m="Could not start the call.";try{m=(await r.json()).detail||m}catch(e){}say(m);btn.disabled=false;return}
+   const j=await r.json();roomName=j.room;
+   const L=window.LivekitClient;room=new L.Room();
+   room.on(L.RoomEvent.TrackSubscribed,(track)=>{if(track.kind==="audio"){const el=track.attach();el.setAttribute("data-ava","1");document.body.appendChild(el)}});
+   room.on(L.RoomEvent.Disconnected,()=>{if(live){say("Call ended.");end()}});
+   await room.connect(j.url,j.token);
+   await room.localParticipant.setMicrophoneEnabled(true);
+   live=true;btn.disabled=false;btn.textContent="End call";btn.classList.add("stop");
+   let left=j.max_seconds;say("Connected. Ava will greet you. ("+left+"s left)");
+   timer=setInterval(()=>{left-=1;if(left<=0){say("Call time limit reached.");end()}else if(live){say("In call. "+left+"s left")}},1000);
+  }catch(e){
+   say(e&&e.name==="NotAllowedError"?"Microphone permission was blocked. Allow it and try again.":"Could not connect. Please try again.");
+   await end();
+  }
+ });
+ window.addEventListener("pagehide",()=>{if(roomName)navigator.sendBeacon("/api/web_call/end",new Blob([JSON.stringify({room:roomName})],{type:"application/json"}))});
+})();
+</script>
+</body></html>

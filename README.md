@@ -40,7 +40,7 @@ Lucas, born June 2, 2013 (child)
 Sofia, born September 21, 2016 (child)
 ```
 
-The test phone line is shared with reviewers on request.
+The test phone line is shared with reviewers on request. A browser test button on the demo page lets a reviewer talk to Ava without a phone, with per-visitor and daily limits.
 
 ## Links
 

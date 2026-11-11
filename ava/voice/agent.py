@@ -234,6 +234,11 @@ class AvaAgent(Agent):
         if not res.get("ok"):
             return {"ok": False, "say": res["reason"]}
         number = os.getenv("HUMAN_TRANSFER_NUMBER", "")
+        if any(str(x.identity).startswith("web-caller") for x in self.ctx.room.remote_participants.values()):
+            # Browser test line: there is no phone leg to transfer, so take a callback instead.
+            self.core.transfer_failed()
+            await self.core.leave_callback(f"web test line, no phone transfer: {reason}")
+            return {"ok": False, "say": "Say a person will call them back soon."}
         if not number:
             self.core.transfer_failed()
             await self.core.leave_callback(f"transfer requested, no transfer number configured: {reason}")

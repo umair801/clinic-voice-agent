@@ -35,6 +35,16 @@ Live calls during a deploy: the worker has `RAILWAY_DEPLOYMENT_DRAINING_SECONDS=
 
 Rollback of code: Railway "Redeploy" on the previous deployment.
 
+## Browser test line ("Talk to Ava")
+Public button on the demo page. Off unless `WEB_CALL_ENABLED=1` on the **backend** service. Limits (backend variables, all optional):
+```
+WEB_CALL_MAX_SECONDS=240        hard stop per call (the server deletes the room)
+WEB_CALL_MAX_CONCURRENT=2       calls at the same time
+WEB_CALL_PER_IP_PER_HOUR=3      per visitor
+WEB_CALL_DAILY_CAP=30           all visitors, resets at 00:00 UTC
+```
+Counters are in memory and reset when the backend restarts. Kill switch: remove `WEB_CALL_ENABLED` (button disappears, endpoint returns 503). Web calls have no phone leg, so a transfer request becomes a logged callback. Web test calls are a separate evidence class from phone calls and from the scripted simulated caller.
+
 ## Alerts
 Error events (tool errors, pending bookings, false booking claims) post to `ALERT_WEBHOOK_URL` when set.
 

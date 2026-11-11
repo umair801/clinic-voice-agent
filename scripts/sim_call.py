@@ -35,6 +35,7 @@ AGENT_NAME = "clinic-ava"
 STATE_KEY = "lk.agent.state"
 
 SCENARIOS = {
+    "silence": ["Hello."],          # says hello, then stays silent; measures reprompts and the close
     # Family of three: the main case (failures 5, 6, 7).
     "family": [
         "Hi, my name is Maria Alvarez and my date of birth is March fourteenth, nineteen eighty two.",
@@ -338,9 +339,17 @@ class Sim:
             rec["reply_done_s"] = round((self.states[-1][0] if self.states else time.monotonic()) - t_end, 3)
             turns.append(rec)
             self.log(f"turn {i + 1}: reply latency {rec['reply_latency_s']}s")
+        silence = None
+        if self.scenario == "silence" and not self.ended:
+            t_last = self.speech_frames_sent_end or time.monotonic()
+            t_w = time.monotonic()
+            while not self.ended and time.monotonic() - t_w < 75:     # stay silent and watch what Ava does
+                await asyncio.sleep(0.5)
+            silence = {"agent_speaking_starts_s_after_hello": [round(t - t_last, 1) for t, st in self.states if st == "speaking" and t > t_last],
+                       "agent_ended_call": bool(self.ended), "watched_s": round(time.monotonic() - t_w, 1)}
         if not self.ended:
             await asyncio.sleep(3.0)
-        result = {"scenario": self.scenario, "room": room_name, "kind": "simulated_caller_webrtc",
+        result = {"silence": silence, "scenario": self.scenario, "room": room_name, "kind": "simulated_caller_webrtc",
                   "ended_by": self.ended or ("script_finished" if not reactive else "reactive_finished"), "turns": turns,
                   "ava_said": list(self.transcripts.values())}
         lat = [t["reply_latency_s"] for t in turns if t["reply_latency_s"] is not None]

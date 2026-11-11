@@ -1,0 +1,17 @@
+{
+  "failure": "Found in testing: a caller who goes silent is never closed. One reprompt, then the call stays open indefinitely (cost and a blocked line).",
+  "design": "reprompt at 8s and 16s of silence, close at 44s (a callback task is recorded first if work is pending)",
+  "cause": "the handler acted once, on the user 'away' event only, so the second reprompt and the close never fired",
+  "fix": "a one-second timer runs while the caller is silent (ava/guards.py silence_step, ava/voice/agent.py), plus an offline eval of the schedule",
+  "before": {
+    "label": "1 real phone test call, synthetic, 2026-11-11, old handler",
+    "result": "one reprompt about 8s after the greeting reply, then 45s more of silence with no close; the caller hung up at 68s"
+  },
+  "after": {
+    "label": "1 simulated-caller test call (WebRTC, synthetic voice), fixed handler, not a phone call",
+    "result": "replied to hello, reprompted at 8s and again 8s later, said goodbye and ended the call itself at 44s of silence",
+    "server_log": "silence_reprompt n=1, silence_reprompt n=2, silence_close action=end, call_end reason=silence_end, 0 appointments",
+    "not_measured": "the fixed handler on a real phone call"
+  },
+  "discarded": "one earlier simulated run overlapped a deployment, so the old container was replaced mid-call; it is not counted as evidence in either direction"
+}

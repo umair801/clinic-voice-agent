@@ -22,4 +22,6 @@ Release under test: 1.0.5 plus a code-only name fix. Numbers below are from the 
 | 10 | Cost per minute | $0.1326/min modeled (LLM only) | Small model by default, large only when routing says so, per-turn token and cost log | SIMULATED CALLER: about $0.0008 per minute, LLM only, over 10.2 call minutes. Not like for like with the modeled baseline. STT, TTS and telephony are not included | `results/sim_leave_and_si_release_1.0.5.json`, `results/cost_model.json` |
 | 11 | Dashboard edits vanish on deploy | Edit lost on deploy | Config and prompts in git, immutable hashed releases, eval gate, canary, rollback | Gate blocking proven by hand (a bad prompt change blocked the publish); tamper check proven | `docs/RUNBOOK.md` |
 
+Found in testing, not in the original task: a silent caller was never closed (one reprompt, then the call stayed open). A timer now reprompts at 8s and 16s and closes at 44s. Before: 1 real phone call, no close. After: 1 simulated-caller call, closed itself at 44s of silence (`results/silence_before_after.json`). The fix is not yet confirmed on a real phone call.
+
 Still open, stated plainly: reply latency is above the 1.5s target in both simulated runs and the one phone call; phone-call stability is unproven (1 good call, 3 earlier drops, cause unknown); human transfer is not tested on a real line.

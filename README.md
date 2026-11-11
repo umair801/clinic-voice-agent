@@ -10,6 +10,7 @@ Built for community health centers and specialty practices. All patient data is 
 - Call state (every person on the call, current step) lives outside the model, so a fallback model resumes at the same step.
 - The call ends only after the caller says goodbye and nothing is pending; silence with pending work becomes a callback task.
 - A false "booked" claim is replaced with a safe line before the caller hears it (tested offline with a fake model stream; not yet confirmed on a live call).
+- A silent caller is reprompted twice, then the call closes with a goodbye (pending work becomes a callback task).
 - A transfer to a person happens only when the caller asks for one or a tool has failed.
 - Human transfer and callback logging. The transfer path needs your SIP trunk settings and has not been tested on a live line yet.
 - Per-turn latency, token and cost logs, call replay, and error alerts to a webhook.
@@ -22,10 +23,12 @@ Orchestration evals: 56 of 56 pass (run against a stub model; they test the safe
 Simulated-caller test results (release 1.0.5; a scripted synthetic caller over WebRTC, not phone calls, not production, no real patients):
 - With a lost booking response injected, the agent confirmed the booking from the clinic record, made one attempt, and the database holds one appointment.
 - In a 4-call run, 8 of 8 appointments were booked exactly once each, with no duplicates and no language switch on "Sí".
+- Final clean batch, 9 calls after the deployment settled: 5 of 5 simple booking calls completed and booked exactly once each (0 duplicates, 0 false "booked" claims, English throughout), 3 of 3 provider answers matched the knowledge base, and 1 silent caller was reprompted twice and then closed by the agent. Details: `results/final_batch_sim_release_1.0.5.json`.
+- LLM cost across the test runs: about $0.0006 to $0.0012 per call minute, LLM only. Breakdown and what is not measured: `docs/COST.md`.
 
 One real phone test call (synthetic patients): a parent and two children were each booked once, and the call ran 2 minutes 34 seconds. That is one call, so no stability claim is made.
 
-Not claimed yet: reply latency (median about 1.9s in simulated runs and 2.6s on the one phone call, target 1.5s), phone-call stability across many calls, and human transfer on a live line. Failure-by-failure table: `docs/BEFORE_AFTER.md`.
+Not claimed yet: reply latency (median 1.9s to 2.2s in simulated runs, 2.23s with p95 2.57s over 25 turns in the final batch, and 2.6s on the one phone call; the 1.5s target is not met), phone-call stability across many calls, and human transfer on a live line. Failure-by-failure table: `docs/BEFORE_AFTER.md`.
 
 ## Try it with a synthetic patient
 
@@ -77,7 +80,7 @@ harness/    replay of the reported call, one check per failure, controls, modele
 evals/      orchestration evals (stub model) and a text-mode live eval (real models, not yet run)
 config/ prompts/ releases/   versioned configuration, prompt, immutable snapshots
 scripts/    SQL schema, seed, SIP setup, call summary, pre-push safety check
-docs/       decisions, runbook, before/after
+docs/       decisions, runbook, before/after, cost per minute
 ```
 
 ## Honesty notes
@@ -86,4 +89,4 @@ docs/       decisions, runbook, before/after
 2. The baseline numbers come from a simulated replay of one reported failing call, not a real call.
 3. Offline evals use a stub model. Voice latency (failures 1 to 3) and real cost can only be measured on live calls.
 4. Cost figures are modeled from real list prices and stated assumptions until live logs replace them. STT, TTS and telephony are not included.
-5. Run on real phone calls so far: the voice worker, from a laptop (development test calls, one caller, synthetic patients). Not yet run live: the Supabase store, the SIP human transfer, the text-mode live eval, and any measurement from the deployed service.
+5. Run live so far: the backend (Supabase store) and the voice worker on Railway, simulated-caller calls against them, and real phone calls to the test number from one personal phone (synthetic patients). Not yet run live: the SIP human transfer success path, the text-mode live eval, and many-call phone stability.

@@ -24,12 +24,22 @@ All commands run from the repo root. Config and prompts exist only in git. Nothi
 ## Code deploy (Railway)
 Push to main. Railway builds the Dockerfile. Two services: backend (`SERVICE=backend`) and worker (`SERVICE=worker`). Set the health check path `/healthz` on the backend service only (Railway service settings). The worker does not serve that path.
 Set `BACKEND_API_KEY` to the same value on both services, and `BACKEND_URL` on the worker to the backend service URL.
+
+Which pushes redeploy (Settings > Watch Paths, set on both services, in the Railway dashboard):
+```
+/ava/**  /prompts/**  /config/**  /releases/**  /Dockerfile  /requirements.txt  /railway.json  /clinic/**  /web/**
+```
+Pushes that only touch docs, results, scripts, tests, evals or harness do not redeploy. Verified on one push (a results-only commit started no new deployment). Watch paths live in the dashboard, not in git, so re-check them after any service is recreated.
+
+Live calls during a deploy: the worker has `RAILWAY_DEPLOYMENT_DRAINING_SECONDS=300`, which gives running calls up to 5 minutes before the old container stops. Two test calls were cut off during earlier deploys (cause likely the redeploy, not proven). A call during a real deploy has not been tested with the draining window. Rule: do not push runtime changes while a call is running.
+
 Rollback of code: Railway "Redeploy" on the previous deployment.
 
 ## Alerts
 Error events (tool errors, pending bookings, false booking claims) post to `ALERT_WEBHOOK_URL` when set.
 
 ## Known limits
-- The Supabase store and the Twilio setup script have not been run against live services.
+- The Supabase store and Twilio SIP trunk run live (test calls only). The human transfer success path has not been tested on a real line.
+- Variables and watch paths are set in the Railway dashboard and are not versioned in git. Config and prompts are.
 - Eval gate tests the rails with a stub model. It does not test model wording or voice latency.
 - The release gate runs evals in the machine that publishes. Wire it into CI before a team uses this.

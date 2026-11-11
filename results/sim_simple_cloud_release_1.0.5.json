@@ -1,0 +1,26 @@
+{
+  "label": "Simulated-caller test calls (WebRTC, synthetic voice, synthetic patients) run from a cloud workspace. Not phone calls, not production.",
+  "release": "1.0.5 plus the code-only name fix",
+  "scenario": "simple_r (Maria, one booking)",
+  "attempts": 6,
+  "completed_and_booked_once": 5,
+  "duplicates": 0,
+  "false_booked_claims": 0,
+  "failures": [
+    {
+      "call_id": "call_14fa429188",
+      "what": "agent left the room after the greeting, caller got no reply, no call_end logged",
+      "cause": "UNKNOWN, not reproduced in 5 later calls; needs the worker logs from that minute"
+    }
+  ],
+  "reply_latency_s": {
+    "turns_measured": 25,
+    "p50": 2.15,
+    "p95": 2.61,
+    "target_p50": 1.5,
+    "target_met": false
+  },
+  "llm_cost_per_minute_usd": 0.00065,
+  "cost_note": "LLM only, STT/TTS/telephony not included",
+  "excluded": "2 partial spanish_r calls that I cut off by hand because the scenario is longer than my command limit; they are not results"
+}

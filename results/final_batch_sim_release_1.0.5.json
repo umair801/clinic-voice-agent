@@ -1,0 +1,45 @@
+{
+  "label": "Final batch: simulated-caller test calls (WebRTC, synthetic voice, synthetic patients) run from a cloud workspace after the deployment settled. Not phone calls, not production.",
+  "release": "1.0.5 plus code fixes (record spelling, silence timer)",
+  "simple_booking": {
+    "calls": 5,
+    "completed_with_call_end": 5,
+    "each_booked_once": 5,
+    "duplicates": 0,
+    "false_booked_claims_blocked": 0,
+    "fallback_turns": 0,
+    "language": "en on every turn"
+  },
+  "provider": {
+    "calls": 3,
+    "answers_matching_knowledge_base": 3,
+    "note": "each named Dr. Elena Kim at Lakeview and Dr. Grace Kim at Riverton, the same two a direct lookup returns"
+  },
+  "silence": {
+    "calls": 1,
+    "agent_speaking_starts_s_after_hello": [
+      2.0,
+      13.8,
+      21.8,
+      49.8
+    ],
+    "agent_ended_call": true,
+    "watched_s": 44.6,
+    "server_log": "call_end reason silence_end"
+  },
+  "reply_latency_s": {
+    "scenario": "simple booking",
+    "turns_measured": 25,
+    "p50": 2.23,
+    "p95": 2.57,
+    "target_p50": 1.5,
+    "target_met": false
+  },
+  "llm_cost_per_minute_usd": 0.00059,
+  "cost_note": "LLM only, simple booking calls; STT, TTS and telephony not included",
+  "excluded": [
+    "calls started before the 08:26 deployment finished (a deploy overlap cut two calls off mid-call)",
+    "one si_r call and two spanish_r calls cut off by hand because they run longer than the 3-minute command limit"
+  ],
+  "not_run_here": "si_r, leave_r, family_r and spanish_r need more than 3 minutes per call; earlier runs from the owner's terminal passed and are in the 1.0.5 result files"
+}

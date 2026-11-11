@@ -67,3 +67,17 @@ def silence_action(state, silent_for_s):
     if state.has_pending_work():
         return "handoff"   # record a callback task for the clinic, then close politely
     return "end"
+
+
+def silence_step(state, silent_for_s):
+    """One tick of the silence timer. Reprompts come at 8s and 16s of silence, the close at 44s.
+
+    The voice layer calls this every second while the caller is silent, so a caller who never speaks again
+    is still reprompted twice and then closed. (The first version acted once, on the 'away' event only, and a
+    silent caller was never closed.)
+    """
+    if state.silence_prompts_sent < MAX_REPROMPTS:
+        if silent_for_s >= SILENCE_REPROMPT_AFTER_S * (state.silence_prompts_sent + 1):
+            return "reprompt"
+        return "wait"
+    return silence_action(state, silent_for_s)

@@ -1,7 +1,7 @@
 {
   "label": "orchestration evals, stub model",
-  "passed": 55,
-  "total": 55,
+  "passed": 56,
+  "total": 56,
   "results": [
     {
       "name": "family_with_lost_response",
@@ -92,6 +92,11 @@
       "name": "silence_policy",
       "passed": true,
       "detail": "wait, reprompt, handoff (pending work is handed off, never dropped)"
+    },
+    {
+      "name": "silent_caller_is_reprompted_twice_then_closed",
+      "passed": true,
+      "detail": "[(8, 'reprompt'), (16, 'reprompt'), (44, 'end')]; with pending work at 44s: handoff"
     },
     {
       "name": "fallback_resumes_same_step",
@@ -196,7 +201,7 @@
     {
       "name": "tool_ms_is_measured",
       "passed": true,
-      "detail": "identify 0.22 ms, after find_slots 1.03 ms"
+      "detail": "identify 0.38 ms, after find_slots 2.18 ms"
     },
     {
       "name": "collect_step_asks_for_parallel_calls",

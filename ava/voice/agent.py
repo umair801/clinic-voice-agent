@@ -6,6 +6,7 @@ Start (after .env is filled):  python -m ava.voice.agent start        (productio
 STATUS: imports and constructs in the sandbox with dummy keys. NOT yet run on a live call.
 Every latency and cost number must come from real test calls (see docs/RUNBOOK.md).
 """
+import asyncio
 import json
 import logging
 import os
@@ -372,24 +373,41 @@ async def entrypoint(ctx: JobContext):
             a["n"] += 1
             a["dur"] += float(getattr(m, "duration", 0.0) or 0.0)
 
-    @session.on("user_state_changed")
-    def _on_user_state(ev):
-        if ev.new_state != "away":
-            return
-        act = guards.silence_action(core.state, float(cfg["silence"]["reprompt_after_s"]) * (core.state.silence_prompts_sent + 1))
-        lang = core.state.language
-        if act == "reprompt":
-            core.state.silence_prompts_sent += 1
-            session.say(SILENCE[lang])
-        elif act in ("handoff", "end"):
-            async def finish():
+    silence = {"task": None}
+
+    async def _silence_loop():
+        """Runs while the caller is silent: reprompt at 8s and 16s, then close at 44s (callback if work is pending)."""
+        start = time.time()
+        base = float(cfg["silence"]["reprompt_after_s"])      # silence already elapsed when 'away' fired
+        while True:
+            act = guards.silence_step(core.state, base + (time.time() - start))
+            lang = core.state.language
+            if act == "reprompt":
+                core.state.silence_prompts_sent += 1
+                logger.event("silence_reprompt", n=core.state.silence_prompts_sent)
+                session.say(SILENCE[lang])
+            elif act in ("handoff", "end"):
                 if act == "handoff":
                     await core.leave_callback("caller went silent with work pending")
                 agent.end_reason = "silence_" + act
                 logger.event("silence_close", action=act, level="warn" if act == "handoff" else "info")
-                await ctx.api.room.delete_room(api.DeleteRoomRequest(room=ctx.room.name))
-            import asyncio
-            asyncio.create_task(finish())
+                try:
+                    await session.say(GOODBYE_LINE[lang], allow_interruptions=False)
+                finally:
+                    await ctx.api.room.delete_room(api.DeleteRoomRequest(room=ctx.room.name))
+                return
+            await asyncio.sleep(1.0)
+
+    @session.on("user_state_changed")
+    def _on_user_state(ev):
+        t = silence["task"]
+        if ev.new_state != "away":
+            if t is not None:
+                t.cancel()
+                silence["task"] = None
+            return
+        if t is None or t.done():
+            silence["task"] = asyncio.create_task(_silence_loop())
 
     await session.start(agent=agent, room=ctx.room)
     bg = BackgroundAudioPlayer(thinking_sound=[AudioConfig(BuiltinAudioClip.KEYBOARD_TYPING, volume=0.5)])

@@ -240,6 +240,26 @@ async def s_silence_policy():
     return (a, b, c) == ("wait", "reprompt", "handoff"), f"{a}, {b}, {c} (pending work is handed off, never dropped)"
 
 
+async def s_silent_caller_is_reprompted_twice_then_closed():
+    """Real phone call: the caller said hello and then stayed silent for 60s. The call was never closed.
+    Now a timer drives it: reprompt at 8s and 16s, wait, then close at 44s; pending work becomes a callback."""
+    core, _ = make()
+    seq = []
+    for t in range(0, 61):
+        act = guards.silence_step(core.state, t)
+        if act == "reprompt":
+            core.state.silence_prompts_sent += 1
+        if act != "wait":
+            seq.append((t, act))
+        if act in ("handoff", "end"):
+            break
+    core2, _ = make()
+    await core2.identify_patient("self", "Maria", "1982-03-14"); await core2.set_party_size(3)
+    core2.state.silence_prompts_sent = 2
+    pend = guards.silence_step(core2.state, 44)
+    return seq == [(8, "reprompt"), (16, "reprompt"), (44, "end")] and pend == "handoff", f"{seq}; with pending work at 44s: {pend}"
+
+
 async def s_fallback_resumes_same_step():
     core, st = make()
     m1 = StubModel()

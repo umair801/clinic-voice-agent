@@ -17,7 +17,7 @@ Built for community health centers and specialty practices. All patient data is 
 
 ## Proof
 
-Orchestration evals: 55 of 55 pass (run against a stub model; they test the safeguards, not the language model). See `results/evals.json`.
+Orchestration evals: 56 of 56 pass (run against a stub model; they test the safeguards, not the language model). See `results/evals.json`.
 
 Simulated-caller test results (release 1.0.5; a scripted synthetic caller over WebRTC, not phone calls, not production, no real patients):
 - With a lost booking response injected, the agent confirmed the booking from the clinic record, made one attempt, and the database holds one appointment.
@@ -64,7 +64,7 @@ Stack: Python, FastAPI, LiveKit Agents, Twilio SIP, Deepgram, ElevenLabs, Anthro
 python -c "from tests.run_all import main; main()"
 ```
 
-Runs the baseline failure replay, its control cases, the 55 orchestration evals, and the modeled cost.
+Runs the baseline failure replay, its control cases, the 56 orchestration evals, and the modeled cost.
 
 ## Layout
 

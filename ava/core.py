@@ -207,11 +207,14 @@ class AvaCore:
         self.log.event("transfer_unavailable", level="warn")
 
     async def leave_callback(self, note):
+        """Record a callback request. ok is False only if saving it failed; ref is the spoken reference (or None)."""
         try:
-            await self.t.callback(self.state.call_id, note)
+            ref = await self.t.callback(self.state.call_id, note)
         except Exception:
             self.log.event("callback_log_failed", level="error")
-        return {"ok": True}
+            return {"ok": False, "ref": None}
+        self.log.event("callback_logged", ref=ref or "")
+        return {"ok": True, "ref": ref}
 
     def agent_said_goodbye(self):
         self.state.agent_goodbye_said = True

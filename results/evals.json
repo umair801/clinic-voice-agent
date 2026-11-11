@@ -201,7 +201,7 @@
     {
       "name": "tool_ms_is_measured",
       "passed": true,
-      "detail": "identify 0.22 ms, after find_slots 1.00 ms"
+      "detail": "identify 0.36 ms, after find_slots 1.94 ms"
     },
     {
       "name": "collect_step_asks_for_parallel_calls",

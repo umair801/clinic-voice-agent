@@ -9,11 +9,18 @@ Two implementations of one interface:
 The idempotency guarantee lives HERE, in the database: appointments.idempotency_key is UNIQUE and
 the slot claim plus the appointment insert happen in one transaction.
 """
+import secrets
 import sqlite3
 import threading
 import datetime as dt
 
 from clinic.data import FAMILY, build_providers, FIRST, LAST
+
+def new_callback_ref():
+    """Short spoken reference for a callback request: two letters and five digits, e.g. CB48291.
+    It is stored as a prefix of the callback note, so the clinic can find the request by it."""
+    return "CB" + f"{secrets.randbelow(100000):05d}"
+
 
 BASE_DAY = dt.date(2026, 11, 12)   # fixed, so seeded data and evals are deterministic
 SLOT_PROVIDERS = 60                # providers that get slots

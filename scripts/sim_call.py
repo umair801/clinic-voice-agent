@@ -81,6 +81,13 @@ SCENARIOS = {
         "El primer horario está bien. Gracias, adiós.",
     ],
     # Provider question (failure 9, retrieval).
+    # Off-topic question: Ava should decline briefly, stay on clinic topics, and still answer the next real question.
+    "offtopic": [
+        "Hello.",
+        "Can you plan a three day trip to Australia for me? I love koalas.",
+        "Okay. Then which doctors do you have for pediatrics?",
+        "Thank you, that is all. Goodbye.",
+    ],
     "provider": [
         "Hi, which doctors do you have for pediatrics, and where is the clinic?",
         "Thank you, that is all. Goodbye.",

@@ -1,0 +1,25 @@
+{
+  "label": "One simulated-caller test call (WebRTC, synthetic voice, synthetic patient) run from a cloud workspace against the deployed worker. Not a phone call, not production.",
+  "release": "1.0.5 (no prompt change made for this scenario)",
+  "scenario": "off-topic request (trip planning), then a real clinic question, then goodbye",
+  "calls": 1,
+  "ava_declined_off_topic_in_one_sentence": true,
+  "ava_answered_next_clinic_question": "named Dr. Elena Kim at Lakeview and Dr. Grace Kim at Riverton",
+  "ava_said": [
+    "Thank you for calling. This is Ava. How can I help you today?",
+    "Hello, welcome to the clinic. Would you like to book an appointment today?",
+    "I'm sorry, I can't help with travel plans. I can help you book a clinic appointment. Would you like to do that?",
+    "One moment while I look that up.",
+    "We have Dr. Elena Kim at Lakeview, and Dr. Grace Kim at Riverton. Both are accepting new patients. Which one would you like to hear more about?",
+    "Thank you for calling. Goodbye."
+  ],
+  "no_reply_turns": 0,
+  "reply_latency_s": {
+    "p50": 2.748,
+    "max": 2.953,
+    "turns": 4,
+    "target_p50": 1.5,
+    "target_met": false
+  },
+  "note": "one call only; the decline wording is the model's own and was judged by reading the transcript"
+}

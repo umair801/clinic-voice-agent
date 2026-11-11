@@ -9,6 +9,7 @@ STEPS = [
     ("voice adapter (needs livekit)", "from tests.voice_adapter import main; main()"),
     ("railway log import", "from tests.log_import import main; main()"),
     ("web test line guard", "from tests.web_call import main; main()"),
+    ("callback reference", "from tests.callback_ref import main; main()"),
 ]
 
 def main():

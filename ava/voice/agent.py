@@ -237,12 +237,12 @@ class AvaAgent(Agent):
         if any(str(x.identity).startswith("web-caller") for x in self.ctx.room.remote_participants.values()):
             # Browser test line: there is no phone leg to transfer, so take a callback instead.
             self.core.transfer_failed()
-            await self.core.leave_callback(f"web test line, no phone transfer: {reason}")
-            return {"ok": False, "say": "Say a person will call them back soon."}
+            res = await self.core.leave_callback(f"web test line, no phone transfer: {reason}")
+            return {"ok": False, "say": callback_say(res)}
         if not number:
             self.core.transfer_failed()
-            await self.core.leave_callback(f"transfer requested, no transfer number configured: {reason}")
-            return {"ok": False, "say": "Say a person will call them back soon."}
+            res = await self.core.leave_callback(f"transfer requested, no transfer number configured: {reason}")
+            return {"ok": False, "say": callback_say(res)}
         try:
             await context.session.say("One moment, I am connecting you to a person.")
             identity = next(iter(self.ctx.room.remote_participants.values())).identity
@@ -252,8 +252,8 @@ class AvaAgent(Agent):
         except Exception as e:
             self.core.log.event("transfer_failed", level="error", error=type(e).__name__)
             self.core.transfer_failed()
-            await self.core.leave_callback(f"transfer failed: {reason}")
-            return {"ok": False, "say": "The transfer did not work. Say a person will call them back soon."}
+            res = await self.core.leave_callback(f"transfer failed: {reason}")
+            return {"ok": False, "say": "The transfer did not work. " + callback_say(res)}
 
     @function_tool
     async def end_call(self, context: RunContext):
@@ -289,6 +289,17 @@ def build_session(cfg):
         },
         user_away_timeout=float(cfg["silence"]["reprompt_after_s"]),
     )
+
+
+def callback_say(res):
+    """Instruction for the model after a callback was (or was not) saved. Never promise what was not saved."""
+    if not res.get("ok"):
+        return "Say you could not save a callback request just now, and suggest calling the clinic again."
+    ref = res.get("ref")
+    if not ref:
+        return "Say a person will call them back soon."
+    return ("Say a person will call them back soon. Their callback reference is " + " ".join(ref)
+            + ". Read the reference slowly, one character at a time, once.")
 
 
 @server.rtc_session(agent_name="clinic-ava")

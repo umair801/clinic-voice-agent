@@ -9,7 +9,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
 from ava.backend.booking import BackendTimeout, BookingService, Fault
-from ava.backend.store import SQLiteStore, SupabaseStore
+from ava.backend.store import SQLiteStore, SupabaseStore, new_callback_ref
 
 
 def build_store():
@@ -100,8 +100,9 @@ def create_app(store=None, fault=None):
 
     @app.post("/v1/callback", dependencies=[Depends(auth)])
     def callback(req: CallbackReq):
-        svc.store.log_callback(req.call_id, req.note)
-        return {"logged": True}
+        ref = new_callback_ref()
+        svc.store.log_callback(req.call_id, f"[{ref}] {req.note}")
+        return {"logged": True, "ref": ref}
 
     # Public demo page: shows eval and baseline results only (synthetic data, no call content).
     web = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "web")

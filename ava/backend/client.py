@@ -10,6 +10,7 @@ import httpx
 
 from ava.backend.booking import BackendTimeout, BookResult
 from ava.backend.reliable import TransportError
+from ava.backend.store import new_callback_ref
 
 IDENTIFY_TIMEOUT_S = 9.0   # one attempt; the filler line repeats every 4s while it runs
 
@@ -34,7 +35,9 @@ class InProcessTransport:
         self.svc.store.log_transfer(call_id, reason)
 
     async def callback(self, call_id, note):
-        self.svc.store.log_callback(call_id, note)
+        ref = new_callback_ref()
+        self.svc.store.log_callback(call_id, f"[{ref}] {note}")
+        return ref
 
 
 class HttpTransport:
@@ -78,4 +81,5 @@ class HttpTransport:
         await self._call("POST", "/v1/transfer", 3.0, json={"call_id": call_id, "reason": reason})
 
     async def callback(self, call_id, note):
-        await self._call("POST", "/v1/callback", 3.0, json={"call_id": call_id, "note": note})
+        d = await self._call("POST", "/v1/callback", 3.0, json={"call_id": call_id, "note": note})
+        return d.get("ref")

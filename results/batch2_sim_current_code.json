@@ -1,0 +1,322 @@
+{
+  "label": "Simulated-caller test calls (WebRTC, synthetic voice, synthetic patients) run from a cloud workspace against the deployed worker. Not phone calls, not production. Up to 4 calls ran at the same time, which may add a little latency.",
+  "code": "release 1.0.5 prompt and config, code at commit 731b2c0 (skip fix and callback reference deployed)",
+  "calls": 14,
+  "scenarios": {
+    "simple_r": 4,
+    "leave_it_r": 3,
+    "provider": 2,
+    "offtopic": 2,
+    "silence": 1,
+    "language_si": 1,
+    "spanish_request": 1
+  },
+  "server_records_found": 14,
+  "ended": {
+    "agent_ended_call_after_goodbye": 11,
+    "silence_end": 1,
+    "caller_disconnected_script_finished": 2
+  },
+  "bookings": {
+    "simple_r_calls": 4,
+    "each_booked_once": 4,
+    "duplicates": 0
+  },
+  "false_booked_claims": 0,
+  "fallback_turns": 0,
+  "large_model_turns": 0,
+  "error_level_events": 0,
+  "auto_decline_fired_in_calls": 2,
+  "max_turns_in_any_call": 6,
+  "language": {
+    "language_si_no_switch": true,
+    "spanish_request_switched_once": true
+  },
+  "reply_latency_s": {
+    "turns": 57,
+    "p50": 1.76,
+    "p95": 2.456,
+    "max": 3.137,
+    "working_target_p50": 2.0,
+    "working_target_met": true,
+    "original_target_p50": 1.5,
+    "original_target_met": false
+  },
+  "llm_cost_per_minute_usd": 0.00049,
+  "call_minutes": 15.9,
+  "cost_note": "LLM only; STT, TTS and telephony not included",
+  "notes": [
+    "one leave_it_r run printed no client output (my command was cut off), but its server record exists and is counted",
+    "two simple_r runs wrote the same result filename and one file was overwritten; the numbers here come from the server call logs, not from those files",
+    "scenario per call is by run counts, not matched call by call"
+  ],
+  "per_call": [
+    {
+      "id": "call_b06a7935d0",
+      "dur": 39,
+      "end": "agent_ended_call_after_goodbye",
+      "booked": 0,
+      "turns": 2,
+      "blocked": 0,
+      "false_claim": 0,
+      "auto_decline": 0,
+      "callback": 0,
+      "langsw": 0,
+      "fb": 0,
+      "large": 0,
+      "langs": [
+        "en"
+      ],
+      "cost": 0.00023,
+      "errs": 0
+    },
+    {
+      "id": "call_0469bc0b45",
+      "dur": 61,
+      "end": "agent_ended_call_after_goodbye",
+      "booked": 0,
+      "turns": 4,
+      "blocked": 0,
+      "false_claim": 0,
+      "auto_decline": 0,
+      "callback": 0,
+      "langsw": 0,
+      "fb": 0,
+      "large": 0,
+      "langs": [
+        "en"
+      ],
+      "cost": 0.00051,
+      "errs": 0
+    },
+    {
+      "id": "call_3ef71c5fce",
+      "dur": 83,
+      "end": "agent_ended_call_after_goodbye",
+      "booked": 1,
+      "turns": 6,
+      "blocked": 0,
+      "false_claim": 0,
+      "auto_decline": 0,
+      "callback": 0,
+      "langsw": 0,
+      "fb": 0,
+      "large": 0,
+      "langs": [
+        "en"
+      ],
+      "cost": 0.0013,
+      "errs": 0
+    },
+    {
+      "id": "call_e19cbbf2c5",
+      "dur": 51,
+      "end": "agent_ended_call_after_goodbye",
+      "booked": 0,
+      "turns": 3,
+      "blocked": 2,
+      "false_claim": 0,
+      "auto_decline": 0,
+      "callback": 0,
+      "langsw": 0,
+      "fb": 0,
+      "large": 0,
+      "langs": [
+        "en"
+      ],
+      "cost": 0.00033,
+      "errs": 0
+    },
+    {
+      "id": "call_1b545f79c2",
+      "dur": 83,
+      "end": "agent_ended_call_after_goodbye",
+      "booked": 0,
+      "turns": 5,
+      "blocked": 4,
+      "false_claim": 0,
+      "auto_decline": 1,
+      "callback": 0,
+      "langsw": 0,
+      "fb": 0,
+      "large": 0,
+      "langs": [
+        "en"
+      ],
+      "cost": 0.00074,
+      "errs": 0
+    },
+    {
+      "id": "call_82d8598fa7",
+      "dur": 74,
+      "end": "agent_ended_call_after_goodbye",
+      "booked": 1,
+      "turns": 5,
+      "blocked": 0,
+      "false_claim": 0,
+      "auto_decline": 0,
+      "callback": 0,
+      "langsw": 0,
+      "fb": 0,
+      "large": 0,
+      "langs": [
+        "en"
+      ],
+      "cost": 0.00079,
+      "errs": 0
+    },
+    {
+      "id": "call_c1392663b2",
+      "dur": 73,
+      "end": "agent_ended_call_after_goodbye",
+      "booked": 1,
+      "turns": 5,
+      "blocked": 0,
+      "false_claim": 0,
+      "auto_decline": 0,
+      "callback": 0,
+      "langsw": 0,
+      "fb": 0,
+      "large": 0,
+      "langs": [
+        "en"
+      ],
+      "cost": 0.00078,
+      "errs": 0
+    },
+    {
+      "id": "call_38f888c7c1",
+      "dur": 71,
+      "end": "agent_ended_call_after_goodbye",
+      "booked": 0,
+      "turns": 4,
+      "blocked": 3,
+      "false_claim": 0,
+      "auto_decline": 1,
+      "callback": 0,
+      "langsw": 0,
+      "fb": 0,
+      "large": 0,
+      "langs": [
+        "en"
+      ],
+      "cost": 0.00064,
+      "errs": 0
+    },
+    {
+      "id": "call_21a5811e80",
+      "dur": 62,
+      "end": "silence_end",
+      "booked": 0,
+      "turns": 1,
+      "blocked": 0,
+      "false_claim": 0,
+      "auto_decline": 0,
+      "callback": 0,
+      "langsw": 0,
+      "fb": 0,
+      "large": 0,
+      "langs": [
+        "en"
+      ],
+      "cost": 4e-05,
+      "errs": 0
+    },
+    {
+      "id": "call_3ba096c7ca",
+      "dur": 83,
+      "end": "agent_ended_call_after_goodbye",
+      "booked": 1,
+      "turns": 6,
+      "blocked": 0,
+      "false_claim": 0,
+      "auto_decline": 0,
+      "callback": 0,
+      "langsw": 0,
+      "fb": 0,
+      "large": 0,
+      "langs": [
+        "en"
+      ],
+      "cost": 0.00079,
+      "errs": 0
+    },
+    {
+      "id": "call_44d3dafbfa",
+      "dur": 44,
+      "end": "agent_ended_call_after_goodbye",
+      "booked": 0,
+      "turns": 2,
+      "blocked": 0,
+      "false_claim": 0,
+      "auto_decline": 0,
+      "callback": 0,
+      "langsw": 0,
+      "fb": 0,
+      "large": 0,
+      "langs": [
+        "en"
+      ],
+      "cost": 0.00025,
+      "errs": 0
+    },
+    {
+      "id": "call_116f95045f",
+      "dur": 92,
+      "end": "caller_disconnected",
+      "booked": 0,
+      "turns": 6,
+      "blocked": 0,
+      "false_claim": 0,
+      "auto_decline": 0,
+      "callback": 0,
+      "langsw": 0,
+      "fb": 0,
+      "large": 0,
+      "langs": [
+        "en"
+      ],
+      "cost": 0.00044,
+      "errs": 0
+    },
+    {
+      "id": "call_90912a6312",
+      "dur": 73,
+      "end": "caller_disconnected",
+      "booked": 0,
+      "turns": 4,
+      "blocked": 0,
+      "false_claim": 0,
+      "auto_decline": 0,
+      "callback": 0,
+      "langsw": 1,
+      "fb": 0,
+      "large": 0,
+      "langs": [
+        "en",
+        "es"
+      ],
+      "cost": 0.00064,
+      "errs": 0
+    },
+    {
+      "id": "call_263f0f8546",
+      "dur": 64,
+      "end": "agent_ended_call_after_goodbye",
+      "booked": 0,
+      "turns": 4,
+      "blocked": 0,
+      "false_claim": 0,
+      "auto_decline": 0,
+      "callback": 0,
+      "langsw": 0,
+      "fb": 0,
+      "large": 0,
+      "langs": [
+        "en"
+      ],
+      "cost": 0.00034,
+      "errs": 0
+    }
+  ]
+}

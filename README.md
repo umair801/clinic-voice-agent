@@ -24,11 +24,12 @@ Simulated-caller test results (release 1.0.5; a scripted synthetic caller over W
 - With a lost booking response injected, the agent confirmed the booking from the clinic record, made one attempt, and the database holds one appointment.
 - In a 4-call run, 8 of 8 appointments were booked exactly once each, with no duplicates and no language switch on "Sí".
 - Final clean batch, 9 calls after the deployment settled: 5 of 5 simple booking calls completed and booked exactly once each (0 duplicates, 0 false "booked" claims, English throughout), 3 of 3 provider answers matched the knowledge base, and 1 silent caller was reprompted twice and then closed by the agent. Details: `results/final_batch_sim_release_1.0.5.json`.
+- Latest batch, 14 simulated calls on the deployed fixes: 14 of 14 had a server record, 4 of 4 bookings were made exactly once with 0 duplicates, 0 false "booked" claims, 0 fallback turns, 0 error events, "Si" did not switch the language and an explicit Spanish request did, a silent caller was closed, and a caller who said "leave it" was never asked again. Reply latency median 1.76s, p95 2.46s over 57 turns. Details: `results/batch2_sim_current_code.json`.
 - LLM cost across the test runs: about $0.0006 to $0.0012 per call minute, LLM only. Breakdown and what is not measured: `docs/COST.md`.
 
 One real phone test call (synthetic patients): a parent and two children were each booked once, and the call ran 2 minutes 34 seconds. That is one call, so no stability claim is made.
 
-Not claimed yet: reply latency (median 1.9s to 2.2s in simulated runs, 2.23s with p95 2.57s over 25 turns in the final batch, and 2.6s on the one phone call; the 1.5s target is not met), phone-call stability across many calls, and human transfer on a live line. Failure-by-failure table: `docs/BEFORE_AFTER.md`.
+Not claimed yet: reply latency on real phone calls (one call: median 2.6s; the original 1.5s target is not met, and the working target of 2.0s is met only in simulated and browser calls), phone-call stability across many calls, and human transfer on a live line. Failure-by-failure table: `docs/BEFORE_AFTER.md`.
 
 ## Try it with a synthetic patient
 

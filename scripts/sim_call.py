@@ -409,7 +409,7 @@ def main():
     os.makedirs(outdir, exist_ok=True)
     for n in range(a.runs):
         res = asyncio.run(Sim(env, a.scenario, verbose=not a.quiet).run())
-        path = os.path.join(outdir, f"{a.scenario}_{int(time.time())}.json")
+        path = os.path.join(outdir, f"{a.scenario}_{int(time.time())}_{os.getpid()}.json")
         json.dump(res, open(path, "w"), indent=2)
         print(f"\nRUN {n + 1}/{a.runs}: ended_by={res['ended_by']} latency p50={res['latency_p50_s']}s max={res['latency_max_s']}s "
               f"no_reply_turns={res['no_reply_turns']}  saved {os.path.relpath(path, ROOT)}")

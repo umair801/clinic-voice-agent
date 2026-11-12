@@ -8,6 +8,7 @@ Scope first: only the LLM part is measured. STT, TTS, telephony and LiveKit Clou
 |---|---|---|---|
 | Earlier simulated-caller batch | SIMULATED CALLER | about $0.0008 | 10.2 call minutes (`results/sim_leave_and_si_release_1.0.5.json`) |
 | Final clean batch, simple booking | SIMULATED CALLER | about $0.00059 | 5 calls (`results/final_batch_sim_release_1.0.5.json`) |
+| Latest batch, 14 calls | SIMULATED CALLER | about $0.00049 | 15.9 call minutes (`results/batch2_sim_current_code.json`) |
 | One real phone call | PHONE | about $0.0012 | 154 seconds (`results/phone_test_calls.json`) |
 
 Range across test runs: about $0.0006 to $0.0012 per minute. These are test-call results with synthetic patients, not production. The three numbers differ because the calls differ (family bookings take more turns), so do not average them into one claim.

@@ -1,0 +1,13 @@
+{
+  "label": "REAL PHONE TEST CALL by the builder, synthetic patient, not production",
+  "release": "1.0.6",
+  "call": "0ad467",
+  "scenario": "Umair single adult",
+  "seconds": 109, "turns": 6, "median_s": 2.27, "max_s": 2.446,
+  "model_turns": {"small": 12, "large": 0},
+  "lookups": [{"found": false}, {"found": true}],
+  "booked": 1, "end": "agent_ended_call_after_goodbye",
+  "llm_only_cost_usd": 0.00158, "llm_only_cost_per_minute_usd": 0.00087,
+  "model_errors": 0,
+  "note": "One missed lookup, then found. The spelling prompt fires after two misses, so it was NOT triggered in this call and is still unmeasured on a real call. The logs do not record what the caller said."
+}

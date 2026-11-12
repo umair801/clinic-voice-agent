@@ -8,6 +8,8 @@ FAMILY = {
     "parent": {"id": "pt_1001", "first": "Maria", "last": "Alvarez", "dob": "1982-03-14"},
     "child1": {"id": "pt_1002", "first": "Lucas", "last": "Alvarez", "dob": "2013-06-02"},
     "child2": {"id": "pt_1003", "first": "Sofia", "last": "Alvarez", "dob": "2016-09-21"},
+    # Extra synthetic adult for the owner's own test calls. Invented date of birth, not a real person.
+    "adult": {"id": "pt_1004", "first": "Umair", "last": "Demo", "dob": "1990-05-20"},
 }
 
 SPECIALTIES = [

@@ -10,7 +10,7 @@ Timestamps tagged `log` in harness/scenario.py come from the task PDF; `harness`
 | 3 | Two half-answers stitched together (overlapping agent speech) | FAIL | `{"overlap_total_s": 2.0, "overlapping_pairs": [{"a": "Thank you, let me check that date", "b": "Got it, one moment while I confirm", "overlap_s": 2...` | phone layer (speculative turn handling, interruption and cancel logic) |
 | 4 | Whole call switches to Spanish on a single non-English word | FAIL | `{"switches": [{"t": 41.0, "lang": "es", "trigger": "S\u00ed, correct"}], "final_language": "es", "asked_for_english_at_s": 80.0, "agent_replied_in_...` | agent config (language_rule) plus prompt |
 | 5 | Says "You're all booked" after a timeout, then retries silently | FAIL | `{"claims": [{"t": 126.0, "said": "You're all booked.", "confirmed": false, "tool_result": {"success": false, "error": "timeout"}}], "false_claims":...` | backend tool (idempotency, explicit status) plus prompt (only say booked on confirmed status) |
-| 6 | Duplicate parent appointments, none for the children | FAIL | `{"appointments_per_patient": {"parent": 2, "child1": 0, "child2": 0}, "expected_each": 1}` | agent workflow state (one patient held, no booking list) plus backend tool |
+| 6 | Duplicate parent appointments, none for the children | FAIL | `{"appointments_per_patient": {"parent": 2, "child1": 0, "child2": 0, "adult": 0}, "expected_each": 1}` | agent workflow state (one patient held, no booking list) plus backend tool |
 | 7 | Agent ends the call mid-booking | FAIL | `{"end_call_events": [{"t": 472.0, "kind": "end_call", "reason": "silence_end_call_s", "pending_tool": true, "caller_said_goodbye": false}], "violat...` | agent config (silence_end_call_s) and workflow edges (end_call guard) |
 | 8 | Fallback to the small model skips steps | FAIL | `{"steps_skipped": ["collect_patients", "verify_dob"], "steps_executed_after_fallback": ["choose_slot", "book", "confirm", "wrap_up"]}` | agent architecture (workflow state outside the model) |
 | 9 | 160K-character prompt with the knowledge base off | FAIL | `{"prompt_chars": 160000, "est_input_tokens_per_turn_from_prompt": 40000, "knowledge_base": "off", "target_max_chars": 20000}` | prompt plus agent config (knowledge base off) |
@@ -57,7 +57,7 @@ Data source: harness replay of the task log (simulation, not a real call)
 ### 6. Duplicate parent appointments, none for the children
 Status: FAIL
 
-Records after the call: {'parent': 2, 'child1': 0, 'child2': 0}. The parent has a duplicate from failure 5, and the call ended before either child was booked.
+Records after the call: {'parent': 2, 'child1': 0, 'child2': 0, 'adult': 0}. The parent has a duplicate from failure 5, and the call ended before either child was booked.
 
 Data source: harness replay of the task log (simulation, not a real call)
 

@@ -114,11 +114,12 @@
         "appointments_per_patient": {
           "parent": 2,
           "child1": 0,
-          "child2": 0
+          "child2": 0,
+          "adult": 0
         },
         "expected_each": 1
       },
-      "evidence": "Records after the call: {'parent': 2, 'child1': 0, 'child2': 0}. The parent has a duplicate from failure 5, and the call ended before either child was booked.",
+      "evidence": "Records after the call: {'parent': 2, 'child1': 0, 'child2': 0, 'adult': 0}. The parent has a duplicate from failure 5, and the call ended before either child was booked.",
       "where_it_lives": "agent workflow state (one patient held, no booking list) plus backend tool",
       "data_source": "harness replay of the task log (simulation, not a real call)",
       "status": "FAIL"

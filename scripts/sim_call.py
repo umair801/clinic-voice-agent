@@ -142,6 +142,12 @@ REACTIVE = {
                              (r"anything else|else i can help|is there anything", CLOSE, 3),
                              (r"for you, or|someone else|for yourself|need an appointment|help you today|appointment for", "Not today, thank you. Goodbye.", 2)],
                    "max_turns": 10},
+    # Same as simple_r for the extra synthetic adult Umair (born 1990-05-20). Tests that the name is heard and found.
+    "umair_r": {"seed": ["Hello, my name is Umair, born May twentieth, nineteen ninety."],
+                "rules": _CLOSE_RULE + [
+                    (r"your (date of birth|birthday)|what is your date|your birth", "My date of birth is May twentieth, nineteen ninety.", 2),
+                    (r"your (first )?name|spell", "My name is Umair. That is U M A I R.", 2), _KIND, _ONLY_ME] + _TAIL_RULES,
+                "max_turns": 12},
     "simple_r": {"seed": ["Hello, my name is Maria Alvarez, born March fourteenth, nineteen eighty two."],
                  "rules": _CLOSE_RULE + _DOB_RULES + [_KIND, _ONLY_ME] + _TAIL_RULES, "max_turns": 12},
     "si_r": {"seed": ["Hello, my name is Maria Alvarez.", "Sí."],

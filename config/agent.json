@@ -1,5 +1,5 @@
 {
-  "version": "1.0.5",
+  "version": "1.0.6",
   "prompt_file": "prompts/system.md",
   "models": {
     "small": "claude-haiku-5-5",

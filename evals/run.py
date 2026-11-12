@@ -302,6 +302,21 @@ async def s_routing():
     return (a, b, c, d) == ("small", "large", "large", "large"), f"{a},{b},{c},{d}"
 
 
+async def s_multi_person_collection_uses_small_model():
+    core, _ = make()
+    core.state.expected_party_size = 3
+    out = core.on_user_turn("I need appointments for me and my two children")
+    return out["tier"] == "small", f"tier {out['tier']} ({out.get('route_reason', out.get('reason', ''))})"
+
+
+async def s_misheard_name_asks_for_spelling_after_two_misses():
+    core, _ = make()
+    first = await core.identify_patient("self", "Omair", "1990-05-20")
+    second = await core.identify_patient("self", "Omair", "1990-05-20")
+    ok = ("spell" not in first["say"].lower()) and ("spell" in second["say"].lower()) and "transfer unless" in second["say"]
+    return ok, f"miss 1: {first['say'][:50]} | miss 2: {second['say'][:50]}"
+
+
 async def s_routing_share_in_family_call():
     core, _ = make()
     tiers = []

@@ -26,6 +26,6 @@ def route(state, last_user_text="", last_tool_error=False):
         return "large", "caller frustration or request for a person"
     if any(p.status in (BookingStatus.PENDING.value, BookingStatus.FAILED.value) for p in state.patients):
         return "large", "booking outcome needs careful wording (pending or failed)"
-    if state.step == Step.COLLECT_PATIENTS and state.expected_party_size > 1 and len(state.patients) < state.expected_party_size:
-        return "large", "multi-person collection"
+    # Multi-person collection used to go to the large model. Measured on real phone calls: the small model booked the same
+    # family calls correctly (3 of 3, once each), while the large model added about 1s per turn and about 8 times the cost.
     return "small", "routine turn"

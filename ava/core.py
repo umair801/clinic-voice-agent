@@ -100,8 +100,13 @@ class AvaCore:
             name = res.get("first_name") or p.first_name
             p.first_name = name          # speak the record spelling, not the speech-to-text guess
             return {"found": True, "key": key, "name": name}
-        return {"found": False, "ambiguous": bool(res.get("ambiguous")),
-                "say": "No matching record. Ask the caller to repeat the spelling and date of birth, or offer a transfer."}
+        p.misses += 1
+        if p.misses >= 2:   # speech-to-text often mishears names; letters are easier to hear than a whole name
+            say = ("No matching record again. Ask the caller to spell the first name one letter at a time, then call identify_patient "
+                   "again with the spelled name. Do not offer a transfer unless the caller asks for a person.")
+        else:
+            say = "No matching record. Ask the caller to repeat the first name and the date of birth."
+        return {"found": False, "ambiguous": bool(res.get("ambiguous")), "say": say}
 
     async def decline_patient(self, key):
         p = self.state.patient(key)

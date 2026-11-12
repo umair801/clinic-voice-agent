@@ -1,7 +1,7 @@
 {
   "label": "orchestration evals, stub model",
-  "passed": 59,
-  "total": 59,
+  "passed": 61,
+  "total": 61,
   "results": [
     {
       "name": "family_with_lost_response",
@@ -124,9 +124,19 @@
       "detail": "small,large,large,large"
     },
     {
+      "name": "multi_person_collection_uses_small_model",
+      "passed": true,
+      "detail": "tier small (routine turn)"
+    },
+    {
+      "name": "misheard_name_asks_for_spelling_after_two_misses",
+      "passed": true,
+      "detail": "miss 1: No matching record. Ask the caller to repeat the f | miss 2: No matching record again. Ask the caller to spell "
+    },
+    {
       "name": "routing_share_in_family_call",
       "passed": true,
-      "detail": "small-model share 93% of turns in a clean family call (stub-driven, routing only)"
+      "detail": "small-model share 100% of turns in a clean family call (stub-driven, routing only)"
     },
     {
       "name": "output_guard_allows_truth",
@@ -141,7 +151,7 @@
     {
       "name": "release_gate_hash",
       "passed": true,
-      "detail": "config version 1.0.5 references an in-repo prompt"
+      "detail": "config version 1.0.6 references an in-repo prompt"
     },
     {
       "name": "real_call_premature_claim_blocked",
@@ -201,7 +211,7 @@
     {
       "name": "tool_ms_is_measured",
       "passed": true,
-      "detail": "identify 0.39 ms, after find_slots 2.47 ms"
+      "detail": "identify 0.23 ms, after find_slots 1.06 ms"
     },
     {
       "name": "collect_step_asks_for_parallel_calls",

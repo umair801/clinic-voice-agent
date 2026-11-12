@@ -42,6 +42,7 @@ class PatientEntry:
     idempotency_key: str = ""
     appointment_id: str = ""
     attempts: int = 0
+    misses: int = 0                  # identify lookups that found no record
     last_error: str = ""
     declined: bool = False           # caller said this person does not need an appointment
 

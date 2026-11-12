@@ -1,0 +1,16 @@
+{
+  "label": "Vendor usage read from the builder's own dashboards on 2026-11-13. All test traffic (simulated, browser and phone test calls and idle connections), not production. Includes only the voice-agent project for Deepgram; the ElevenLabs figure covers the whole workspace.",
+  "deepgram": {
+    "source": "Usage > Overview export, 2026-11-01 to 2026-11-13, endpoint /listen only",
+    "hours_by_day": {"2026-11-06": 0.162, "2026-11-07": 0.991, "2026-11-08": 0.767, "2026-11-09": 1.380, "2026-11-10": 0.478, "2026-11-11": 0.327, "2026-11-12": 0.839},
+    "total_hours": 4.944, "total_minutes": 296.7, "requests": 172,
+    "list_price_usd_per_min_nova3_multilingual_streaming": 0.0092,
+    "list_price_total_usd": 2.73,
+    "billed_amount": "not shown on the usage page; the account may be using the free credit, so billed cost is not known"
+  },
+  "elevenlabs": {
+    "source": "Settings > Usage and Credit Limit dialog",
+    "workspace_credits_used": 28168, "workspace_credit_limit": 90000,
+    "note": "covers the whole workspace and billing period, not only this project; cannot be split by call"
+  }
+}

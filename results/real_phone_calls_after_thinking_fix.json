@@ -1,0 +1,22 @@
+{
+  "label": "REAL PHONE TEST CALLS by the builder, synthetic patients, not production, no real patients",
+  "evidence_class": "PHONE (3 calls), release 1.0.5 plus the thinking-field fix",
+  "caller_note": "The caller is a non-native English speaker.",
+  "calls": [
+    {"call": "1285fe", "scenario": "Maria family, all three", "seconds": 169, "turns": 10, "median_s": 2.77, "large_model_turns": 4, "booked": 3, "end": "agent_ended_call_after_goodbye", "note": "one early goodbye blocked"},
+    {"call": "4dead2", "scenario": "Maria family, Sofia left for another time", "seconds": 219, "turns": 13, "median_s": 2.3, "large_model_turns": 2, "booked": 2, "end": "agent_ended_call_after_goodbye", "note": "Sofia skipped by the system (auto_decline), 3 early goodbyes blocked, not asked again"},
+    {"call": "de93e9", "scenario": "Umair single adult", "seconds": 208, "turns": 13, "median_s": 2.12, "large_model_turns": 0, "booked": 0, "end": "agent_ended_call_after_goodbye", "note": "name heard as Omair in 4 lookups, no record found, nothing invented, a transfer promise was blocked (caller did not ask for a person), person skipped, clean goodbye"}
+  ],
+  "totals": {
+    "calls": 3, "booked_exactly_once_per_patient": true, "duplicates": 0,
+    "model_api_400_errors_or_llm_unavailable_events": 0,
+    "large_model_turns_answered_by_large_model": 6,
+    "turns": 36, "reply_latency_median_s": 2.3, "reply_latency_p95_s": 3.709, "reply_latency_max_s": 3.833,
+    "large_turn_latency_median_s": 3.42, "large_turn_latency_samples": 3,
+    "small_turn_latency_median_s": 2.2,
+    "llm_only_cost_per_minute_usd": 0.00314, "call_minutes": 9.9,
+    "large_model_share_of_llm_cost_in_family_calls": "about 86% (call 1) and 65% (call 2)"
+  },
+  "finding": "With the fix the larger model really answers, and it is slower (3.2 to 3.8s on measured turns, 3 samples) and about 8 times the cost per turn. In the 6 earlier real calls the small model answered the same family turns and booked 3 of 3 once each.",
+  "open": ["human transfer on a live line", "native-speaker callers", "name misheard as Omair"]
+}

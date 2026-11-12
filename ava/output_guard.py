@@ -102,6 +102,7 @@ class SentenceGuard:
             names = [p.first_name or p.key for p in self.state.active_patients() if p.status != BookingStatus.BOOKED.value]
             who = " and ".join(names) or "someone"
             self.asked = True
+            self.state.pending_asked = True
             trail = sentence[len(sentence.rstrip()):]
             return PENDING_ASK.get(self.state.language, PENDING_ASK["en"]).format(who=who) + (trail or " ")
         if GOODBYE_WORDS.search(sentence) and not self.state.caller_goodbye:

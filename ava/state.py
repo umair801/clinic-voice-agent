@@ -66,6 +66,8 @@ class CallState:
     agent_goodbye_said: bool = False
     transfer_requested: bool = False
     human_requested: bool = False               # the caller asked for a person
+    callback_saved: bool = False                # a callback request was really saved, so open visits are with the clinic
+    pending_asked: bool = False                 # Ava already asked 'book now or leave it?' about open visits
     books_this_turn_keys: list = field(default_factory=list)   # people booked since the caller last spoke
     multi_booking_ok: bool = False              # the caller said to book everyone together this turn
     ended: bool = False
@@ -113,6 +115,9 @@ class CallState:
             return True
         if self.needs_booking():
             return True
+        if self.callback_saved:
+            # The clinic has a saved callback for anyone still open. Only an unsettled booking can still drop work.
+            return any(p.status == BookingStatus.PENDING.value for p in self.patients if not p.declined)
         if self.expected_party_size and len(self.active_patients()) < self.expected_party_size - self.declined_count():
             return True
         # any patient started but never given a slot or a final outcome

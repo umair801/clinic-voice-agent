@@ -692,6 +692,45 @@ async def s_call_end_flushes_the_log_tail():
     return [r.get("event") for r in got] == ["identify_done", "call_end"], f"events sent at call end: {[r.get('event') for r in got]}"
 
 
+
+async def s_real_web_call_leave_it_for_another_time_is_not_asked_again():
+    """Real web test call: Ava asked 'book now or leave it?', the caller said 'leave it for another time' three times and
+    Ava kept asking because the model never called decline_patient. The system now marks the person skipped itself."""
+    core, st = make()
+    await core.identify_patient("self", "Maria", "1982-03-14")
+    core.on_user_turn("Okay, bye.")
+    out, blocked = await _guard_stream(core.state, "Take care, goodbye. ")
+    asked = core.state.pending_asked and "still has no appointment" in out
+    core.on_user_turn("Leave it for another time.")
+    declined = core.state.patient("self").declined
+    return asked and declined and not core.state.has_pending_work(), f"asked {asked}, Maria declined by the system {declined}"
+
+
+async def s_leave_it_phrase_needs_the_question_first():
+    """The 'leave it' reading only applies after Ava asked; an ordinary request must not skip a person."""
+    core, st = make()
+    await core.identify_patient("self", "Maria", "1982-03-14")
+    core.on_user_turn("Can you check another time for me?")
+    untouched = not core.state.patient("self").declined
+    core.state.pending_asked = True
+    core.on_user_turn("Yes, book her now.")
+    still = not core.state.patient("self").declined
+    return untouched and still, f"no skip without the question {untouched}; no skip when the caller says book {still}"
+
+
+async def s_saved_callback_lets_the_caller_hang_up_but_not_over_pending_booking():
+    core, st = make()
+    await core.identify_patient("self", "Maria", "1982-03-14")
+    blocked_before = core.state.has_pending_work()
+    await core.leave_callback("caller asked for a person")
+    core.on_user_turn("Thanks, goodbye.")
+    core.agent_said_goodbye()
+    ok_end = core.end_call_check().allowed
+    p = core.state.patient("self")
+    p.status = BookingStatus.PENDING.value
+    still_blocked = core.state.has_pending_work()
+    return blocked_before and ok_end and still_blocked, f"open before {blocked_before}, end allowed after saved callback {ok_end}, pending booking still blocks {still_blocked}"
+
 SCENARIOS = [(n[2:], f) for n, f in list(globals().items()) if n.startswith("s_") and callable(f)]
 
 

@@ -52,9 +52,25 @@ class AvaCore:
         s.multi_booking_ok = bool(MULTI_BOOKING_OK.search(text or ""))
         if HUMAN_REQUEST.search(text or ""):
             s.human_requested = True
+        self._auto_decline_if_left(text)
         tier, reason = route(s, text, self.last_tool_error)
         return {"tier": tier, "route_reason": reason, "instruction": s.instruction(), "language": s.language,
                 "language_switched": dec.switched}
+
+    def _auto_decline_if_left(self, text):
+        """Caller answered 'book now or leave it?' with a clear 'leave it'. The call state must not depend on the model
+        remembering to call decline_patient (found in a web test call: the question repeated 3 times)."""
+        s = self.state
+        if not s.pending_asked or s.pending_tools or not text:
+            return
+        if not guards.DECLINE_OPEN.search(text) or guards.BOOK_NOW.search(text):
+            return
+        left = [p for p in s.active_patients() if p.status == BookingStatus.NONE.value]
+        for p in left:
+            p.declined = True
+        if left:
+            s.pending_asked = False
+            self.log.event("auto_decline", who=[p.first_name or p.key for p in left])
 
     def mark_greeted(self):
         self.state.greeted = True
@@ -213,6 +229,7 @@ class AvaCore:
         except Exception:
             self.log.event("callback_log_failed", level="error")
             return {"ok": False, "ref": None}
+        self.state.callback_saved = True
         self.log.event("callback_logged", ref=ref or "")
         return {"ok": True, "ref": ref}
 

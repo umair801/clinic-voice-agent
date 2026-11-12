@@ -1,7 +1,7 @@
 {
   "label": "orchestration evals, stub model",
-  "passed": 56,
-  "total": 56,
+  "passed": 59,
+  "total": 59,
   "results": [
     {
       "name": "family_with_lost_response",
@@ -201,7 +201,7 @@
     {
       "name": "tool_ms_is_measured",
       "passed": true,
-      "detail": "identify 0.36 ms, after find_slots 1.94 ms"
+      "detail": "identify 0.20 ms, after find_slots 1.22 ms"
     },
     {
       "name": "collect_step_asks_for_parallel_calls",
@@ -282,6 +282,21 @@
       "name": "call_end_flushes_the_log_tail",
       "passed": true,
       "detail": "events sent at call end: ['identify_done', 'call_end']"
+    },
+    {
+      "name": "real_web_call_leave_it_for_another_time_is_not_asked_again",
+      "passed": true,
+      "detail": "asked True, Maria declined by the system True"
+    },
+    {
+      "name": "leave_it_phrase_needs_the_question_first",
+      "passed": true,
+      "detail": "no skip without the question True; no skip when the caller says book True"
+    },
+    {
+      "name": "saved_callback_lets_the_caller_hang_up_but_not_over_pending_booking",
+      "passed": true,
+      "detail": "open before True, end allowed after saved callback True, pending booking still blocks True"
     }
   ]
 }

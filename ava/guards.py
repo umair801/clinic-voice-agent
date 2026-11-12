@@ -18,6 +18,11 @@ GOODBYE = re.compile(r"\b(goodbye|good bye|bye|that'?s all(?!\s+(?:correct|right
                      r"i am done|no thanks|no thank you|all set|we'?re good|we are good|adi[oó]s|eso es todo|nada m[aá]s)\b", re.I)
 BARE_NO = re.compile(r"^\s*(no|nope|nah)[\s,.!?]*(thanks|thank you|gracias)?[\s.!?]*$", re.I)
 
+# The caller's answer to "book now or leave it?" when it is a clear "leave it". Used only after Ava asked.
+DECLINE_OPEN = re.compile(r"\b(leave (it|her|him|them)\b|another time|some other time|next time|not now|maybe later|"
+                          r"call (you )?back later|don'?t need|do not need|no need|skip)", re.I)
+BOOK_NOW = re.compile(r"\bbook (it|him|her|me|them|now)\b", re.I)
+
 SILENCE_REPROMPT_AFTER_S = 8.0
 MAX_REPROMPTS = 2
 SILENCE_FINAL_WAIT_S = 20.0

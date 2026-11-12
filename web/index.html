@@ -31,7 +31,7 @@ table{width:100%;border-collapse:collapse;font-size:.92rem}th,td{text-align:left
 <script>
 const FAILS=[
 [1,"Silence while patient lookup runs","identify_patient: 7.8s of dead air","Filler line after 1s, repeated every 4s; one 9s lookup attempt. Test: a 7.8s lookup was injected and succeeded at 8.0s with the filler logged, in 2 of 2 simulated calls."],
-[2,"Callers keep saying hello?","9.0s gap after a caller turn","Reply median about 2.2s in test calls, above the 1.5s target (not met). No unanswered turns in the runs."],
+[2,"Callers keep saying hello?","9.0s gap after a caller turn","Reply median 1.9s, p95 2.78s over 43 turns in 6 real test calls; above the 1.5s target (not met), within the 2.0s working target. No unanswered turns."],
 [3,"Two half-answers stitched together","2.0s overlapping speech","Adaptive interruption configured. Overlap on real audio is not measured yet."],
 [4,"Whole call switches to Spanish","Switched on 'Si, correct'","'Si' did not switch the call in 2 of 2 simulated calls. Switch only on a clear request or a full Spanish sentence; switch back on request."],
 [5,"Says booked after a timeout","False 'booked' claim, silent retry","Test: booking response lost on purpose. The agent confirmed from the clinic record: 1 attempt, 1 appointment, no false 'booked'."],
@@ -39,7 +39,7 @@ const FAILS=[
 [7,"Ends call mid-booking","Hung up with a booking pending","Ended only after the caller's goodbye with no pending work, in every completed test call. A silent caller is reprompted twice, then the call closes."],
 [8,"Fallback model skips steps","Skipped identity steps","Workflow step is derived from external state (offline evals). No fallback turn happened in test calls, so live behavior is not measured."],
 [9,"160K-character prompt","160,000 chars","About 2,000 character prompt plus retrieval. Provider answers matched the knowledge base in 3 of 3 test calls."],
-[10,"Cost per minute","$0.1326 modeled","About $0.0006 to $0.0012 per minute in test calls, LLM only. STT, TTS and telephony are not measured yet."],
+[10,"Cost per minute","$0.1326 modeled","About $0.0022 per minute in the 6 real test calls (simulated calls lower), LLM only. STT, TTS and telephony are not measured yet."],
 [11,"Dashboard edits vanish","Edit lost on deploy","Config and prompts in the repo, versioned. An eval gate blocks a bad change; rollback is one command."]];
 const tb=document.querySelector("#tbl tbody");
 FAILS.forEach(f=>{const tr=document.createElement("tr");f.forEach(c=>{const td=document.createElement("td");td.textContent=c;tr.appendChild(td)});tb.appendChild(tr)});
@@ -48,7 +48,7 @@ fetch("/api/results/evals").then(r=>r.json()).catch(()=>({})).then(e=>{
  let h="";
  h+= e.total?`<div><span class="ok">${e.passed}/${e.total}</span> orchestration evals passed <span class="mut">(stub model: tests the safeguards, not the language model)</span></div>`:"";
  h+=`<div style="margin-top:8px"><b>Test-call results</b> <span class="mut">(release 1.0.5, synthetic patients, not production)</span></div>`;
- h+=`<ul style="margin:6px 0 0;padding-left:20px"><li>Simulated-caller batch: 5 of 5 bookings made exactly once, 0 duplicates, 0 false "booked" claims; 3 of 3 provider answers matched the knowledge base; a silent caller was closed by the agent.</li><li>One real phone call: a parent and two children booked once each (2 min 34 s). One call, so no stability claim.</li><li>Reply latency: median about 2.2s against a 1.5s target (not met).</li><li>LLM cost: about $0.0006 to $0.0012 per minute, LLM only. STT, TTS and telephony are not measured yet.</li></ul>`;
+ h+=`<ul style="margin:6px 0 0;padding-left:20px"><li>Simulated-caller batch: 5 of 5 bookings made exactly once, 0 duplicates, 0 false "booked" claims; 3 of 3 provider answers matched the knowledge base; a silent caller was closed by the agent.</li><li>6 real test calls by the builder (3 browser, 3 phone): all ended after the goodbye, bookings made once per patient with 0 duplicates, 0 false "booked" claims, 0 fallback turns. The caller is a non-native English speaker.</li><li>Reply latency over 43 turns: median 1.9s, p95 2.78s. Working target 2.0s met, 1.5s target not met.</li><li>LLM cost: about $0.0022 per minute in the real test calls, LLM only. STT, TTS and telephony are not measured yet. Phone stability over many calls and human transfer are not proven yet.</li></ul>`;
  h+=`<div style="margin-top:8px"><a href="https://github.com/umair801/clinic-voice-agent">GitHub: code, eval results, runbook</a></div>`;
  s.innerHTML=h;});
 document.getElementById("note").textContent="Baseline column is a simulation of the reported failing call, not a real call. Results are test calls with synthetic patients, not production calls with real patients.";

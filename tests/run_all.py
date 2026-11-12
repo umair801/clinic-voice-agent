@@ -10,6 +10,7 @@ STEPS = [
     ("railway log import", "from tests.log_import import main; main()"),
     ("web test line guard", "from tests.web_call import main; main()"),
     ("callback reference", "from tests.callback_ref import main; main()"),
+    ("thinking field per model", "from tests.thinking_arg import main; main()"),
 ]
 
 def main():

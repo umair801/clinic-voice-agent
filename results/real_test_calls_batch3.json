@@ -4,22 +4,103 @@
   "caller_note": "The caller is a non-native English speaker. Results with native speakers are not measured.",
   "release": "1.0.5",
   "calls": [
-    {"call": "e8927f", "line": "web", "scenario": "Umair books", "seconds": 83, "turns": 6, "median_s": 1.94, "max_s": 2.695, "booked": 1},
-    {"call": "9d945c", "line": "web", "scenario": "Maria family", "seconds": 117, "turns": 6, "median_s": 1.81, "max_s": 2.291, "booked": 3},
-    {"call": "a533d0", "line": "web", "scenario": "callback", "seconds": 58, "turns": 3, "median_s": 1.9, "max_s": 2.062, "booked": 0, "note": "callback reference saved, 1 early goodbye blocked, 1 silence reprompt"},
-    {"call": "33a5f7", "line": "phone", "scenario": "Umair books", "seconds": 195, "turns": 12, "median_s": 2.0, "max_s": 3.922, "booked": 1, "note": "2 failed name lookups then found; cause not confirmed, logs do not show what the speech-to-text heard"},
-    {"call": "a8bb01", "line": "phone", "scenario": "Maria family", "seconds": 226, "turns": 14, "median_s": 1.95, "max_s": 2.368, "booked": 3, "large_model_turns": 6, "note": "6 turns routed to the larger model, reason not checked"},
-    {"call": "54da38", "line": "phone", "scenario": "provider question", "seconds": 52, "turns": 2, "median_s": 1.79, "max_s": 1.916, "booked": 0}
+    {
+      "call": "e8927f",
+      "line": "web",
+      "scenario": "Umair books",
+      "seconds": 83,
+      "turns": 6,
+      "median_s": 1.94,
+      "max_s": 2.695,
+      "booked": 1
+    },
+    {
+      "call": "9d945c",
+      "line": "web",
+      "scenario": "Maria family",
+      "seconds": 117,
+      "turns": 6,
+      "median_s": 1.81,
+      "max_s": 2.291,
+      "booked": 3
+    },
+    {
+      "call": "a533d0",
+      "line": "web",
+      "scenario": "callback",
+      "seconds": 58,
+      "turns": 3,
+      "median_s": 1.9,
+      "max_s": 2.062,
+      "booked": 0,
+      "note": "callback reference saved, 1 early goodbye blocked, 1 silence reprompt"
+    },
+    {
+      "call": "33a5f7",
+      "line": "phone",
+      "scenario": "Umair books",
+      "seconds": 195,
+      "turns": 12,
+      "median_s": 2.0,
+      "max_s": 3.922,
+      "booked": 1,
+      "note": "2 failed name lookups then found; cause not confirmed, logs do not show what the speech-to-text heard"
+    },
+    {
+      "call": "a8bb01",
+      "line": "phone",
+      "scenario": "Maria family",
+      "seconds": 226,
+      "turns": 14,
+      "median_s": 1.95,
+      "max_s": 2.368,
+      "booked": 3,
+      "large_model_turns": 6,
+      "note": "6 turns routed to the larger model, reason not checked"
+    },
+    {
+      "call": "54da38",
+      "line": "phone",
+      "scenario": "provider question",
+      "seconds": 52,
+      "turns": 2,
+      "median_s": 1.79,
+      "max_s": 1.916,
+      "booked": 0
+    }
   ],
   "totals": {
-    "calls": 6, "ended_after_goodbye": 6, "fallback_turns": 0, "false_booked_claims": 0, "error_level_call_events": 0,
-    "appointments_in_db_for_these_calls": {"e8927f": 1, "9d945c": 3, "33a5f7": 1, "a8bb01": 3},
+    "calls": 6,
+    "ended_after_goodbye": 6,
+    "fallback_turns": "not recorded by the old counter; silent fallback occurred on large-tier turns",
+    "false_booked_claims": 0,
+    "error_level_call_events": 0,
+    "appointments_in_db_for_these_calls": {
+      "e8927f": 1,
+      "9d945c": 3,
+      "33a5f7": 1,
+      "a8bb01": 3
+    },
     "duplicate_idempotency_keys_in_db": 0,
-    "turns": 43, "reply_latency_median_s": 1.9, "reply_latency_p95_s": 2.78, "reply_latency_max_s": 3.922,
-    "web_median_s": 1.86, "phone_median_s": 1.94,
-    "llm_only_cost_per_minute_usd": {"all": 0.0022, "web": 0.00087, "phone": 0.00293},
+    "turns": 43,
+    "reply_latency_median_s": 1.9,
+    "reply_latency_p95_s": 2.78,
+    "reply_latency_max_s": 3.922,
+    "web_median_s": 1.86,
+    "phone_median_s": 1.94,
+    "llm_only_cost_per_minute_usd": {
+      "all": 0.0022,
+      "web": 0.00087,
+      "phone": 0.00293
+    },
     "call_minutes": 12.2,
     "not_included_in_cost": "speech-to-text, voice, telephony"
   },
-  "open": ["human transfer on a live line", "phone stability across more calls", "all-in cost per minute", "native-speaker callers"]
+  "open": [
+    "human transfer on a live line",
+    "phone stability across more calls",
+    "all-in cost per minute",
+    "native-speaker callers"
+  ],
+  "correction_2026_11_12": "fallback_turns 0 and error events 0 were wrong in effect: turns routed to the large model failed with a 400 (thinking disabled not accepted by Sonnet 5.5) and the small model answered; the fallback counter did not record it. Cost for large-tier turns was computed at the large model price, so it is overstated. Fixed in code, live API check passed, not re-measured on a call."
 }

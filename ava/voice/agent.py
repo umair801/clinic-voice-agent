@@ -60,6 +60,19 @@ def load_config(call_id):
     return load_release(v)
 
 
+def thinking_arg(model: str, mode: str):
+    """The `thinking` request field that turns hidden thinking off for this model, or None to send nothing.
+
+    Found on real phone calls: the Sonnet 5.5 API answers 400 to {"type": "disabled"} and asks for
+    {"type": "between_tools"}, so every large-model turn silently fell back to the small model.
+    Haiku 5.5 accepts "disabled". Checked against the live API for both models."""
+    if mode != "disabled":
+        return None
+    if str(model).startswith("claude-sonnet-5"):
+        return {"type": "between_tools"}
+    return {"type": "disabled"}
+
+
 class VoiceLLM(anthropic.LLM):
     """Anthropic LLM with adaptive thinking switched off per request.
 
@@ -69,8 +82,9 @@ class VoiceLLM(anthropic.LLM):
 
     def chat(self, *args, extra_kwargs=None, **kwargs):
         kw = dict(extra_kwargs) if isinstance(extra_kwargs, dict) else {}
-        if self.thinking_mode == "disabled":
-            kw.setdefault("thinking", {"type": "disabled"})
+        arg = thinking_arg(self.model, self.thinking_mode)
+        if arg is not None:
+            kw.setdefault("thinking", arg)
         return super().chat(*args, extra_kwargs=kw, **kwargs)
 
 
@@ -311,6 +325,10 @@ async def entrypoint(ctx: JobContext):
     logger.event("call_start", release=manifest["version"], release_hash=manifest["hash"])
     core = AvaCore(call_id, HttpTransport(), logger=logger)
     llms = build_llms(cfg)
+    for _tier, _adapter in llms.items():   # a model that errors is skipped silently by the adapter, so log it
+        _adapter.on("llm_availability_changed", lambda ev, _t=_tier: logger.event(
+            "llm_unavailable" if not ev.available else "llm_recovered", level="warn" if not ev.available else "info",
+            tier=_t, model=getattr(ev.llm, "model", "?")))
     session = build_session(cfg)
     agent = AvaAgent(core, prompt, llms, cfg, manifest, ctx)
 

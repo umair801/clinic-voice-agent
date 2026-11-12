@@ -1,0 +1,27 @@
+{
+  "label": "Simulated-caller test calls (WebRTC, synthetic voice, synthetic patient) against the deployed worker, plus one real browser test call. Not phone calls, not production.",
+  "fix": "state-driven skip: a clear 'leave it' after Ava's 'book now or leave it?' marks the person skipped; a saved callback lets the caller hang up",
+  "real_browser_call_before_fix": {
+    "result": "after 'leave it for another time' the question repeated about 3 times; 4 goodbyes blocked; caller hung up",
+    "callback_reference_read": "CB81688"
+  },
+  "real_browser_call_after_fix": {
+    "result": "asked for a person, callback saved (reference logged), Ava ended the call after the goodbye, reason agent_ended_call_after_goodbye, 4 turns",
+    "note": "Maria was not identified on this call, so the leave-it question path was not exercised"
+  },
+  "simulated_call_after_fix": {
+    "scenario": "leave_it_r",
+    "calls": 1,
+    "auto_decline_event": true,
+    "declined": [
+      "Maria"
+    ],
+    "ended": "agent_ended_call_after_goodbye",
+    "question_repeats": "asked twice before the caller's reply arrived, then stopped",
+    "reply_latency_s": {
+      "p50": 2.155,
+      "max": 3.533
+    }
+  },
+  "not_measured": "more than one call per path; the exact phone path"
+}

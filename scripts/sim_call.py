@@ -81,6 +81,13 @@ SCENARIOS = {
         "El primer horario está bien. Gracias, adiós.",
     ],
     # Provider question (failure 9, retrieval).
+    # Caller identifies, then says goodbye with no appointment; Ava asks once; caller says "leave it". Tests the state-driven skip.
+    "leave_it": [
+        "Hi, my name is Maria Alvarez and my date of birth is March fourteenth, nineteen eighty two.",
+        "Thank you. Goodbye.",
+        "Leave it for another time.",
+        "No, that is everything. Goodbye.",
+    ],
     # Off-topic question: Ava should decline briefly, stay on clinic topics, and still answer the next real question.
     "offtopic": [
         "Hello.",
@@ -129,6 +136,12 @@ REACTIVE = {
                     (r"((for sofia|sofia.{0,40}(next|open|same|slot|time)).{0,160}(would (you|that|it)|work for|same time|time for)|(would|work).{0,60}for sofia)", "No, skip Sofia for now. That is everything. Goodbye.", 1),
                     (r"(leave|left|without).{0,40}(sofia|her)|sofia.{0,40}(leave|left|without)", "Yes, leave her without one. Goodbye.", 2)] + _TAIL_RULES,
                 "max_turns": 16},
+    # Caller identifies, declines to book, says goodbye; then answers Ava's "book now or leave it?" with "leave it".
+    "leave_it_r": {"seed": ["Hello, my name is Maria Alvarez, born March fourteenth, nineteen eighty two."],
+                   "rules": [(r"leave it for another time|book .{0,20} now", "Leave it for another time.", 4),
+                             (r"anything else|else i can help|is there anything", CLOSE, 3),
+                             (r"for you, or|someone else|for yourself|need an appointment|help you today|appointment for", "Not today, thank you. Goodbye.", 2)],
+                   "max_turns": 10},
     "simple_r": {"seed": ["Hello, my name is Maria Alvarez, born March fourteenth, nineteen eighty two."],
                  "rules": _CLOSE_RULE + _DOB_RULES + [_KIND, _ONLY_ME] + _TAIL_RULES, "max_turns": 12},
     "si_r": {"seed": ["Hello, my name is Maria Alvarez.", "Sí."],

@@ -1,0 +1,74 @@
+{
+ "label": "OFFLINE rollback drill run in a temp copy of the repo; the real pointer file was not touched. Not a live deploy drill.",
+ "steps": [
+  {
+   "step": "start state: version a call would use",
+   "seconds": 0.0,
+   "result": "1.0.6",
+   "output": ""
+  },
+  {
+   "step": "rollback command",
+   "seconds": 0.0,
+   "result": "1.0.5",
+   "output": "rolled back 1.0.6 -> 1.0.5"
+  },
+  {
+   "step": "version a new call uses after rollback",
+   "seconds": 0.0,
+   "result": "1.0.5",
+   "output": ""
+  },
+  {
+   "step": "loaded config really is that release (hash checked)",
+   "seconds": 0.0,
+   "result": {
+    "version": "1.0.5",
+    "hash": "d61611f216b49e80",
+    "model_large": "claude-sonnet-5-5"
+   },
+   "output": ""
+  },
+  {
+   "step": "roll forward: canary 1.0.6 at 100 percent (eval gate runs)",
+   "seconds": 4.46,
+   "result": {
+    "stable": "1.0.5",
+    "canary": "1.0.6",
+    "canary_percent": 100,
+    "history": [
+     "1.0.0",
+     "1.0.1",
+     "1.0.2",
+     "1.0.3",
+     "1.0.4"
+    ]
+   },
+   "output": "eval gate: 61/61 passed -> OPEN\ncanary 1.0.6 at 100%"
+  },
+  {
+   "step": "promote",
+   "seconds": 0.0,
+   "result": "1.0.6",
+   "output": "promoted 1.0.6"
+  },
+  {
+   "step": "version a call uses after roll forward",
+   "seconds": 0.0,
+   "result": "1.0.6",
+   "output": ""
+  },
+  {
+   "step": "instant pin with AGENT_RELEASE=1.0.5 (no file change)",
+   "seconds": 0.0,
+   "result": "1.0.5",
+   "output": ""
+  },
+  {
+   "step": "tampered snapshot is refused",
+   "seconds": 0.0,
+   "result": "refused: RuntimeError: release 1.0.5 was modified after publish (hash mismatch). Refusing to load.",
+   "output": ""
+  }
+ ]
+}

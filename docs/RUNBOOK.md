@@ -19,7 +19,10 @@ All commands run from the repo root. Config and prompts exist only in git. Nothi
 ## Roll back
 - During a canary: `python -c "from ava.release import cli; cli(['rollback'])"` drops the canary.
 - After promotion: same command returns stable to the previous version.
-- Roll back takes effect on the next call. No redeploy needed because releases are files in the image; commit the new POINTER.json and redeploy the worker, or set `AGENT_RELEASE=<old version>` on the worker for an instant pin.
+- Two ways to take effect. (1) Pointer: run the rollback command, commit `releases/POINTER.json`, push; Railway redeploys the worker and new calls use the old version. (2) Instant pin: set `AGENT_RELEASE=<old version>` on the worker in Railway; the worker restarts and new calls use it. Remove the variable to follow the pointer again. Either way, calls already running finish on the old container (draining window). How long a live rollback takes on Railway has not been timed yet.
+
+## Rollback drill
+Offline drill done 2026-11-13 in a temp copy of the repo (`results/rollback_drill_offline.json`): rollback 1.0.6 to 1.0.5 took under 0.1s and a new call picked 1.0.5 with the hash verified; roll forward through the canary command (eval gate 61 of 61) and promote returned to 1.0.6; `AGENT_RELEASE=1.0.5` pinned the old release with no file change; a release edited after publish was refused (hash mismatch). This is NOT a live drill. A live drill means setting `AGENT_RELEASE=1.0.5` on the Railway worker, timing the restart, confirming one call logs `release 1.0.5` in `call_start`, then removing the variable and confirming `1.0.6` again. Not done yet.
 
 ## Code deploy (Railway)
 Push to main. Railway builds the Dockerfile. Two services: backend (`SERVICE=backend`) and worker (`SERVICE=worker`). Set the health check path `/healthz` on the backend service only (Railway service settings). The worker does not serve that path.

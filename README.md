@@ -18,19 +18,21 @@ Built for community health centers and specialty practices. All patient data is 
 
 ## Proof
 
-Orchestration evals: 61 of 61 pass (run against a stub model; they test the safeguards, not the language model). See `results/evals.json`.
+Every number below comes from test calls and offline checks with synthetic patients. None of it is production or real patient traffic.
 
-Simulated-caller test results (release 1.0.5; a scripted synthetic caller over WebRTC, not phone calls, not production, no real patients):
-- With a lost booking response injected, the agent confirmed the booking from the clinic record, made one attempt, and the database holds one appointment.
-- In a 4-call run, 8 of 8 appointments were booked exactly once each, with no duplicates and no language switch on "Sí".
-- Final clean batch, 9 calls after the deployment settled: 5 of 5 simple booking calls completed and booked exactly once each (0 duplicates, 0 false "booked" claims, English throughout), 3 of 3 provider answers matched the knowledge base, and 1 silent caller was reprompted twice and then closed by the agent. Details: `results/final_batch_sim_release_1.0.5.json`.
-- Latest batch, 14 simulated calls on the deployed fixes: 14 of 14 had a server record, 4 of 4 bookings were made exactly once with 0 duplicates, 0 false "booked" claims, 0 fallback turns, 0 error events, "Si" did not switch the language and an explicit Spanish request did, a silent caller was closed, and a caller who said "leave it" was never asked again. Reply latency median 1.76s, p95 2.46s over 57 turns. Details: `results/batch2_sim_current_code.json`.
-- Real test calls, 6 by the builder (3 browser, 3 phone, synthetic patients, release 1.0.5): all 6 ended only after the goodbye, 4 of 4 bookings were made exactly once per patient (0 duplicate keys in the database), 0 false "booked" claims, a callback reference was saved and read back, a provider question was answered. Correction found afterwards: in these calls the turns routed to the larger model were rejected by the model API (a request setting error) and answered by the small model, which the old fallback counter did not record; fixed and re-checked against the live API, not yet re-measured on a call. Reply latency median 1.9s, p95 2.78s over 43 turns. The caller is a non-native English speaker; native-speaker callers are not measured. One phone call needed three lookups to find a name, cause not confirmed. Details: `results/real_test_calls_batch3.json`.
-- LLM cost across the test runs: about $0.0006 to $0.0022 per call minute (simulated calls at the low end, the six real test calls at $0.0022, phone calls $0.0029), LLM only. Breakdown and what is not measured: `docs/COST.md`.
+| What was run | Result |
+|---|---|
+| 61 offline scenarios against the real orchestration code (stub model) | 61 of 61 pass. They test the safeguards, not the language model. `results/evals.json` |
+| 23 scripted simulated-caller calls (release 1.0.5) | Every booking made exactly once, 0 duplicates, 0 false "booked" claims, "Si" did not switch the language, silent callers closed by the agent, 3 of 3 provider answers matched the knowledge base. Latest batch of 14: reply median 1.76s, p95 2.46s over 57 turns. `results/final_batch_sim_release_1.0.5.json`, `results/batch2_sim_current_code.json` |
+| 6 real calls by the builder (3 browser, 3 phone) | All ended after the goodbye, bookings once per patient (1, 3, 1, 3), 0 duplicate keys in the database, a callback reference saved and read back. Reply median 1.9s, p95 2.78s over 43 turns. `results/real_test_calls_batch3.json` |
+| 3 real phone calls after a model fix | A family of three booked once each; a call where one child was left for another time booked the other two and did not ask again; a call where the caller's name was misheard found no record, invented none and booked 0. Reply median 2.3s, p95 3.71s over 36 turns. `results/real_phone_calls_after_thinking_fix.json` |
+| 1 real phone call on release 1.0.6 | Booked once, 0 model errors, small model only, reply median 2.27s over 6 turns. `results/real_phone_call_release_1.0.6.json` |
 
-Real phone test calls (synthetic patients): 4 calls in total to the test number. In two of them a parent and two children were each booked once, an adult was booked once, and a provider question was answered. Three older calls from the same phone dropped early and the cause is not found, so no stability claim is made.
+Cost per call minute: the model (LLM) costs about $0.0006 to $0.0031, measured from call logs. A partial all-in estimate, excluding telephony and the LiveKit service, is about $0.018 to $0.030 per minute, where speech-to-text uses the vendor list price and the voice part is an estimate, not a measurement. `docs/COST.md`
 
-Not claimed yet: reply latency on real phone calls (3 phone calls: median 1.94s; the original 1.5s target is not met, and the working target of 2.0s is met), phone-call stability across many calls, and human transfer on a live line. Failure-by-failure table: `docs/BEFORE_AFTER.md`.
+Found by testing real calls, not in the original task: a "leave it for another time" answer was asked again and again (fixed in call state), and the larger model was failing and silently replaced by the small one (fixed, and the log now records a model that errors). Both are in `docs/BEFORE_AFTER.md`.
+
+Not claimed: the 1.5 second reply target (not met; the working target of 2.0 seconds is met in some batches and missed in others), phone-call stability (five phone calls dropped or were hung up by the caller's line mid-call and the cause is not found), human transfer on a live line (not tested), callers who are native English speakers (the tester is not, and a name was misheard), and the Twilio and LiveKit parts of the cost. Failure-by-failure table: `docs/BEFORE_AFTER.md`.
 
 ## Try it with a synthetic patient
 
@@ -91,5 +93,5 @@ docs/       decisions, runbook, before/after, cost per minute
 1. Synthetic patients only. No real PHI.
 2. The baseline numbers come from a simulated replay of one reported failing call, not a real call.
 3. Offline evals use a stub model. Voice latency (failures 1 to 3) and real cost can only be measured on live calls.
-4. Cost figures are modeled from real list prices and stated assumptions until live logs replace them. STT, TTS and telephony are not included.
-5. Run live so far: the backend (Supabase store) and the voice worker on Railway, simulated-caller calls against them, and real phone calls to the test number from one personal phone (synthetic patients). Not yet run live: the SIP human transfer success path, the text-mode live eval, and many-call phone stability.
+4. The model cost is measured from call logs. Speech-to-text uses the vendor list price, the voice cost is an estimate, and telephony and LiveKit are not included.
+5. Run live so far: the backend (Supabase store) and the voice worker on Railway, simulated-caller calls, browser calls and real phone calls to the test number from one personal phone (synthetic patients). Not yet run live: the SIP human transfer success path, the text-mode live eval, and many-call phone stability.

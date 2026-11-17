@@ -2,19 +2,24 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Clinic Phone Agent: No Silent Calls, No False Bookings</title>
 <meta name="description" content="An inbound clinic phone agent that books every family member once and says booked only when the clinic record confirms it. Test-call results with synthetic patients.">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--paper:#f2f5f4;--card:#fff;--ink:#0d2b2e;--mut:#4f6669;--line:#d3dfdd;--teal:#0f6b6b;--tealdk:#0a5252;--ok:#0b7a4b;--pend:#8f5b00;--bad:#b3261e;--okbg:#e3f3ea;--pendbg:#fbefd6;--badbg:#fbe4e1;--r:6px}
+:root{--paper:#f9fafb;--card:#fff;--ink:#1f2937;--mut:#6b7280;--line:#e5e7eb;--teal:#6366f1;--tealdk:#4f46e5;--viol:#8b5cf6;--ok:#047857;--pend:#b45309;--bad:#b91c1c;--okbg:#d1fae5;--pendbg:#fef3c7;--badbg:#fee2e2;--r:8px;--grad:linear-gradient(135deg,#667eea 0%,#764ba2 100%)}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.55 Figtree,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-h1,h2,h3{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;font-weight:700;letter-spacing:-.015em;line-height:1.12;margin:0}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.6 'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-weight:700;letter-spacing:-.01em;line-height:1.15;margin:0}
 a{color:var(--tealdk)}
 :focus-visible{outline:3px solid #1f8fff;outline-offset:2px}
 .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.band{background:var(--grad);color:#fff;padding-bottom:36px}
+.band a{color:#fff}.band .top b span{color:#fbbf24}
+.band .who,.band .small{color:rgba(255,255,255,.88)}
+.band .replay,.band #wc{color:var(--ink)}.band .replay a,.band #wc a{color:var(--tealdk)}
+.band #wc p,.band .replay .nm,.band .replay .evid{color:var(--mut)}
+.band .btn.ghost{color:#fff;border-color:#fff}.band .btn.ghost:hover{background:#fff;color:var(--tealdk)}
+.band .btn:not(.ghost){background:#fff;color:var(--tealdk)}.band .btn:not(.ghost):hover{background:#eef2ff}.band #wc .btn:not(.ghost){background:var(--teal);color:#fff}.band #wc .btn:not(.ghost):hover{background:var(--tealdk)}.band .btn.stop{background:var(--bad);color:#fff}
 .top{display:flex;justify-content:space-between;align-items:center;padding:18px 0}
-.top b{font-family:"Bricolage Grotesque",sans-serif;font-size:1.05rem}
+.top b{font-family:inherit;font-size:1.05rem}
 .top nav a{margin-left:18px;font-weight:500;text-decoration:none}
 .top nav a:hover{text-decoration:underline}
 .hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:40px;align-items:start;padding:28px 0 48px}
@@ -23,7 +28,7 @@ a{color:var(--tealdk)}
 .lede{font-size:1.12rem;margin:18px 0 8px}
 .who{color:var(--mut);margin:0}
 .cta{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0 10px;align-items:center}
-.btn{font:600 1rem Figtree,sans-serif;border:0;border-radius:var(--r);padding:12px 20px;cursor:pointer;background:var(--teal);color:#fff;text-decoration:none;display:inline-block}
+.btn{font:600 1rem 'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;border:0;border-radius:var(--r);padding:12px 20px;cursor:pointer;background:var(--teal);color:#fff;text-decoration:none;display:inline-block}
 .btn:hover{background:var(--tealdk)}.btn.stop{background:var(--bad)}.btn[disabled]{opacity:.55;cursor:default}
 .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
 .btn.ghost:hover{background:var(--ink);color:#fff}
@@ -35,10 +40,10 @@ a{color:var(--tealdk)}
 .replay header{padding:16px 18px 0}
 .replay h2{font-size:1.15rem}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 0;padding:0 18px;border-bottom:1px solid var(--line)}
-.tab{font:500 .93rem Figtree,sans-serif;background:none;border:0;border-bottom:3px solid transparent;padding:8px 4px 9px;margin-right:12px;cursor:pointer;color:var(--mut)}
+.tab{font:500 .93rem 'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:none;border:0;border-bottom:3px solid transparent;padding:8px 4px 9px;margin-right:12px;cursor:pointer;color:var(--mut)}
 .tab[aria-selected=true]{color:var(--ink);border-color:var(--teal);font-weight:600}
 .seg{display:inline-flex;margin:14px 18px 4px;border:1.5px solid var(--ink);border-radius:var(--r);overflow:hidden}
-.seg button{font:600 .9rem Figtree,sans-serif;background:var(--card);color:var(--ink);border:0;padding:7px 16px;cursor:pointer}
+.seg button{font:600 .9rem 'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--card);color:var(--ink);border:0;padding:7px 16px;cursor:pointer}
 .seg button[aria-pressed=true]{background:var(--ink);color:#fff}
 .evid{margin:0 18px;color:var(--mut);font-size:.86rem}
 ol.tl{list-style:none;margin:12px 18px 6px;padding:0;position:relative}
@@ -50,7 +55,7 @@ li.ok .dot{border-color:var(--ok)}li.bad .dot{border-color:var(--bad)}li.pend .d
 li .ev{font-size:.95rem}
 .chip{display:inline-block;font-size:.78rem;font-weight:600;border-radius:99px;padding:1px 9px;margin-left:6px;vertical-align:1px}
 .chip.ok{background:var(--okbg);color:var(--ok)}.chip.bad{background:var(--badbg);color:var(--bad)}.chip.pend{background:var(--pendbg);color:var(--pend)}
-.out{margin:6px 18px 0;padding:10px 12px;border-left:4px solid var(--teal);background:#eef5f4;font-size:.93rem}
+.out{margin:6px 18px 0;padding:10px 12px;border-left:4px solid var(--teal);background:#eef2ff;font-size:.93rem}
 .out.bad{border-color:var(--bad);background:var(--badbg)}
 .nm{margin:8px 18px 16px;color:var(--mut);font-size:.84rem}
 .swap{animation:sw .22s ease-out}@keyframes sw{from{opacity:.0}to{opacity:1}}
@@ -59,17 +64,17 @@ section{padding:34px 0}
 section h2{font-size:clamp(1.5rem,2.6vw,2rem);margin-bottom:8px}
 .proof{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
 .proof div{padding:18px;border-right:1px solid var(--line)}.proof div:last-child{border-right:0}
-.proof b{display:block;font:700 1.9rem "Bricolage Grotesque",sans-serif;letter-spacing:-.02em}
+.proof b{display:block;font-weight:700;font-size:1.9rem;letter-spacing:-.02em}
 .proof span{display:block;font-size:.93rem;margin-top:2px}
-.tag{display:inline-block;font-size:.78rem;font-weight:600;border-radius:var(--r);padding:1px 8px;background:#e4ecea;color:var(--ink);margin-top:8px}
-.tag.real{background:var(--okbg);color:var(--ok)}.tag.sim{background:#e3eefb;color:#1a4f96}.tag.off{background:#ece8f6;color:#4a3a86}.tag.no{background:var(--badbg);color:var(--bad)}
+.tag{display:inline-block;font-size:.78rem;font-weight:600;border-radius:99px;padding:1px 9px;background:#f3f4f6;color:var(--ink);margin-top:8px}
+.tag.real{background:var(--okbg);color:#065f46}.tag.sim{background:#e0e7ff;color:#3730a3}.tag.off{background:#ede9fe;color:#5b21b6}.tag.no{background:var(--badbg);color:#991b1b}
 /* table */
 .filters{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
-.filters button{font:500 .9rem Figtree,sans-serif;border:1.5px solid var(--line);background:var(--card);border-radius:99px;padding:5px 14px;cursor:pointer;color:var(--ink)}
+.filters button{font:500 .9rem 'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;border:1.5px solid var(--line);background:var(--card);border-radius:99px;padding:5px 14px;cursor:pointer;color:var(--ink)}
 .filters button[aria-pressed=true]{border-color:var(--ink);background:var(--ink);color:#fff}
 table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
 th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top;font-size:.93rem}
-th{font-weight:600;background:#eaf0ee}
+th{font-weight:600;background:#f3f4f6}
 td:first-child{font-variant-numeric:tabular-nums;color:var(--mut);width:36px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:28px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px}
@@ -77,7 +82,7 @@ td:first-child{font-variant-numeric:tabular-nums;color:var(--mut);width:36px}
 .card ul{margin:6px 0 0;padding-left:20px}.card li{margin:4px 0}
 .arch{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px;overflow-x:auto}
 .arch svg{min-width:760px;width:100%;height:auto;display:block}
-.arch text{font-family:Figtree,sans-serif;fill:var(--ink)}
+.arch text{font-family:inherit;fill:var(--ink)}
 .nope{border:1.5px solid var(--bad);background:#fff;border-radius:var(--r);padding:18px 20px}
 .nope h2{font-size:1.3rem}
 .nope ul{columns:2;column-gap:36px;padding-left:20px;margin:10px 0 0}.nope li{margin:5px 0;break-inside:avoid}
@@ -86,8 +91,8 @@ footer{padding:28px 0 60px;color:var(--mut);font-size:.9rem;border-top:1px solid
 @media(max-width:700px){#tbl thead{display:none}#tbl,#tbl tbody,#tbl tr,#tbl td{display:block;width:auto}#tbl tr{padding:12px 14px;border-bottom:1px solid var(--line)}#tbl td{border:0;padding:2px 0}#tbl td:first-child{display:inline-block;width:auto;margin-right:8px}#tbl td:nth-child(2){display:inline;font-weight:600}#tbl td:nth-child(3){color:var(--mut);font-size:.86rem;margin-top:4px}#tbl td:nth-child(3)::before{content:"Before: "}#tbl td:nth-child(5){margin-top:6px}.top nav a{margin-left:12px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.swap{animation:none}}
 </style></head><body>
-<div class="wrap">
-<div class="top"><b>Datawebify</b><nav><a href="https://github.com/umair801/clinic-voice-agent">GitHub</a><a href="https://www.upwork.com/freelancers/umair801">Upwork</a></nav></div>
+<div class="band"><div class="wrap">
+<div class="top"><b>M <span>Umair</span></b><nav><a href="https://github.com/umair801/clinic-voice-agent">GitHub</a><a href="https://www.upwork.com/freelancers/umair801">Upwork</a></nav></div>
 
 <div class="hero">
  <div>
@@ -115,7 +120,8 @@ footer{padding:28px 0 60px;color:var(--mut);font-size:.9rem;border-top:1px solid
  </div>
 </div>
 
-<section style="padding-top:8px">
+</div></div><div class="wrap">
+<section style="padding-top:28px">
  <div class="proof" id="proof">
   <div><b id="p1">61 of 61</b><span>offline safeguard checks pass</span><i class="tag off">Offline eval</i></div>
   <div><b>0</b><span>duplicate bookings or false "booked" claims in 23 simulated calls</span><i class="tag sim">Simulated caller</i></div>
@@ -147,27 +153,27 @@ footer{padding:28px 0 60px;color:var(--mut);font-size:.9rem;border-top:1px solid
 <section>
  <h2>How a call flows</h2>
  <div class="arch"><svg viewBox="0 0 900 250" role="img" aria-label="Architecture: caller or browser to Twilio SIP or LiveKit, then the voice worker with speech to text, language model and text to speech, then the FastAPI backend and Supabase. A release gate checks every change.">
-  <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="#4f6669"/></marker></defs>
-  <g fill="#fff" stroke="#0d2b2e" stroke-width="1.5">
+  <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="#6b7280"/></marker></defs>
+  <g fill="#fff" stroke="#1f2937" stroke-width="1.5">
    <rect x="10" y="20" width="120" height="44" rx="6"/><rect x="10" y="90" width="120" height="44" rx="6"/>
    <rect x="170" y="55" width="130" height="44" rx="6"/>
-   <rect x="340" y="20" width="250" height="150" rx="6" fill="#eef5f4"/>
+   <rect x="340" y="20" width="250" height="150" rx="6" fill="#eef2ff"/>
    <rect x="640" y="20" width="130" height="44" rx="6"/><rect x="640" y="90" width="130" height="44" rx="6"/>
    <rect x="340" y="196" width="250" height="40" rx="6" stroke-dasharray="5 4"/>
   </g>
   <g font-size="14" text-anchor="middle">
    <text x="70" y="47">Phone caller</text><text x="70" y="117">Browser call</text>
-   <text x="235" y="74">Twilio SIP</text><text x="235" y="91" font-size="12" fill="#4f6669">and LiveKit</text>
+   <text x="235" y="74">Twilio SIP</text><text x="235" y="91" font-size="12" fill="#6b7280">and LiveKit</text>
    <text x="465" y="42" font-weight="600">Voice worker</text>
    <text x="705" y="47">FastAPI backend</text><text x="705" y="117">Supabase</text>
    <text x="465" y="221">Release gate: evals, canary, rollback</text>
   </g>
   <g font-size="13" text-anchor="middle">
-   <rect x="355" y="54" width="220" height="30" rx="4" fill="#fff" stroke="#9fb5b3"/><text x="465" y="74">Deepgram speech to text</text>
-   <rect x="355" y="92" width="220" height="30" rx="4" fill="#fff" stroke="#9fb5b3"/><text x="465" y="112">Claude Haiku, Sonnet for hard turns</text>
-   <rect x="355" y="130" width="220" height="30" rx="4" fill="#fff" stroke="#9fb5b3"/><text x="465" y="150">ElevenLabs text to speech</text>
+   <rect x="355" y="54" width="220" height="30" rx="4" fill="#fff" stroke="#c7d2fe"/><text x="465" y="74">Deepgram speech to text</text>
+   <rect x="355" y="92" width="220" height="30" rx="4" fill="#fff" stroke="#c7d2fe"/><text x="465" y="112">Claude Haiku, Sonnet for hard turns</text>
+   <rect x="355" y="130" width="220" height="30" rx="4" fill="#fff" stroke="#c7d2fe"/><text x="465" y="150">ElevenLabs text to speech</text>
   </g>
-  <g stroke="#4f6669" stroke-width="1.5" fill="none" marker-end="url(#ar)">
+  <g stroke="#6b7280" stroke-width="1.5" fill="none" marker-end="url(#ar)">
    <path d="M130 42L170 68"/><path d="M130 112L170 88"/><path d="M300 77L340 77"/><path d="M590 60L640 42"/><path d="M590 120L640 112"/><path d="M705 64L705 90"/>
   </g></svg></div>
  <p class="small" style="margin-top:8px">The call workflow step is held outside the model, so a fallback model resumes at the same step. Bookings carry an idempotency key and return booked, pending or failed.</p>

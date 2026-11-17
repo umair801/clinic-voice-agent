@@ -12,28 +12,27 @@ a{color:var(--tealdk)}
 :focus-visible{outline:3px solid #1f8fff;outline-offset:2px}
 .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
 .band{background:var(--grad);color:#fff;padding-bottom:36px}
-.band a{color:#fff}.band .top b span{color:#fbbf24}
+.band a{color:#fff}.nav{background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.1);position:sticky;top:0;z-index:10}.nav .top{padding:14px 20px}.nav .top b{font-size:1.4rem}.nav .top b span{color:var(--teal)}.nav a{color:var(--ink)!important;font-weight:500}.nav a:hover{color:var(--teal)!important;text-decoration:none}
 .band .who,.band .small{color:rgba(255,255,255,.88)}
-.band .replay,.band #wc{color:var(--ink)}.band .replay a,.band #wc a{color:var(--tealdk)}
-.band #wc p,.band .replay .nm,.band .replay .evid{color:var(--mut)}
+.band .replay{color:var(--ink)}.band .replay a{color:var(--tealdk)}
+.band .replay .nm,.band .replay .evid{color:var(--mut)}
 .band .btn.ghost{color:#fff;border-color:#fff}.band .btn.ghost:hover{background:#fff;color:var(--tealdk)}
-.band .btn:not(.ghost){background:#fff;color:var(--tealdk)}.band .btn:not(.ghost):hover{background:#eef2ff}.band #wc .btn:not(.ghost){background:var(--teal);color:#fff}.band #wc .btn:not(.ghost):hover{background:var(--tealdk)}.band .btn.stop{background:var(--bad);color:#fff}
+.band .btn:not(.ghost){background:#fff;color:var(--tealdk)}.band .btn:not(.ghost):hover{background:#eef2ff}.band .btn.stop{background:var(--bad);color:#fff}
 .top{display:flex;justify-content:space-between;align-items:center;padding:18px 0}
 .top b{font-family:inherit;font-size:1.05rem}
 .top nav a{margin-left:18px;font-weight:500;text-decoration:none}
 .top nav a:hover{text-decoration:underline}
-.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:40px;align-items:start;padding:28px 0 48px}
-.hero h1{font-size:clamp(2.1rem,4.6vw,3.35rem)}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:40px;align-items:start;padding:32px 0 8px}
+.hero h1{font-size:clamp(2rem,3.7vw,2.95rem)}
 .hero p{max-width:34em}
-.lede{font-size:1.12rem;margin:18px 0 8px}
+.lede{font-size:1.08rem;margin:14px 0 6px}
 .who{color:var(--mut);margin:0}
-.cta{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0 10px;align-items:center}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 8px;align-items:center}
 .btn{font:600 1rem 'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;border:0;border-radius:var(--r);padding:12px 20px;cursor:pointer;background:var(--teal);color:#fff;text-decoration:none;display:inline-block}
 .btn:hover{background:var(--tealdk)}.btn.stop{background:var(--bad)}.btn[disabled]{opacity:.55;cursor:default}
 .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
 .btn.ghost:hover{background:var(--ink);color:#fff}
-#wc{display:none;margin:8px 0 0;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);max-width:34em}
-#wc p{margin:.3em 0;color:var(--mut);font-size:.93rem}#wcstat{min-height:1.4em}
+#wc{display:none}#wcstat{min-height:1.2em;margin:0 0 4px}
 .small{font-size:.88rem;color:var(--mut)}
 /* replay */
 .replay{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 1px 0 var(--line)}
@@ -91,8 +90,8 @@ footer{padding:28px 0 60px;color:var(--mut);font-size:.9rem;border-top:1px solid
 @media(max-width:700px){#tbl thead{display:none}#tbl,#tbl tbody,#tbl tr,#tbl td{display:block;width:auto}#tbl tr{padding:12px 14px;border-bottom:1px solid var(--line)}#tbl td{border:0;padding:2px 0}#tbl td:first-child{display:inline-block;width:auto;margin-right:8px}#tbl td:nth-child(2){display:inline;font-weight:600}#tbl td:nth-child(3){color:var(--mut);font-size:.86rem;margin-top:4px}#tbl td:nth-child(3)::before{content:"Before: "}#tbl td:nth-child(5){margin-top:6px}.top nav a{margin-left:12px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.swap{animation:none}}
 </style></head><body>
+<header class="nav"><div class="wrap top"><b>M <span>Umair</span></b><nav><a href="https://github.com/umair801/clinic-voice-agent">GitHub</a><a href="https://www.upwork.com/freelancers/umair801">Upwork</a></nav></div></header>
 <div class="band"><div class="wrap">
-<div class="top"><b>M <span>Umair</span></b><nav><a href="https://github.com/umair801/clinic-voice-agent">GitHub</a><a href="https://www.upwork.com/freelancers/umair801">Upwork</a></nav></div>
 
 <div class="hero">
  <div>
@@ -100,13 +99,12 @@ footer{padding:28px 0 60px;color:var(--mut);font-size:.9rem;border-top:1px solid
   <p class="lede">Clinics lose callers to dead air and wrong bookings. This agent answers inbound calls, books every family member exactly once, and tells the caller "booked" only after the clinic record confirms it.</p>
   <p class="who">Built for community health centers and specialty practices. All patient data here is synthetic.</p>
   <div class="cta">
+   <span id="wc"><button class="btn" id="wcbtn">Start test call</button></span>
    <a class="btn ghost" href="tel:+12764441589">Call +1 276 444 1589</a>
   </div>
+  <p id="wcstat" class="small" role="status"></p>
+  <p class="small" id="wcnote" style="display:none">The browser call needs no phone. Ava is an AI voice agent. Use headphones, allow the microphone, and use only the synthetic names below. Calls end after a few minutes.</p>
   <p class="small">The phone line is a test line on a Twilio trial account, so a short trial notice may play first. Calls are logged for testing.</p>
-  <div id="wc"><b>Talk to Ava in your browser</b>
-   <p>Ava is an AI voice agent. Use headphones, allow the microphone, and use only the synthetic names in the table below. Calls end after a few minutes.</p>
-   <button class="btn" id="wcbtn">Start test call</button>
-   <p id="wcstat" role="status"></p></div>
  </div>
 
  <div class="replay" id="rp">
@@ -277,7 +275,7 @@ fetch("/api/results/evals").then(r=>r.json()).catch(()=>({})).then(e=>{if(e&&e.t
  const box=document.getElementById("wc"),btn=document.getElementById("wcbtn"),st=document.getElementById("wcstat");
  let room=null,roomName=null,live=false,timer=null;
  const say=t=>{st.textContent=t};
- fetch("/api/web_call/status").then(r=>r.json()).then(j=>{if(j.enabled&&window.LivekitClient)box.style.display="block"}).catch(()=>{});
+ fetch("/api/web_call/status").then(r=>r.json()).then(j=>{if(j.enabled&&window.LivekitClient){box.style.display="inline-block";document.getElementById("wcnote").style.display="block"}}).catch(()=>{});
  async function end(){
   live=false;clearInterval(timer);
   const n=roomName;roomName=null;

@@ -47,3 +47,7 @@ Once the LLM bill is this small, STT, TTS and telephony probably dominate the re
 4. LiveKit Cloud: agent session and SIP minutes in its usage page.
 
 Add each vendor's usage for a known batch of test calls, divide by the same call minutes, and put the sum next to the LLM figure. Until the voice and telephony parts are measured, the all-in figure above is an estimate with a range, not a measured result.
+
+## Twilio trunk, inbound leg (measured 2026-11-17)
+
+Source: Twilio usage API, this month (Nov 1 to 17), category trunking-origination-local: 25 calls, 59 minutes, $0.2006 total, about $0.0034 per minute. These are test calls (builder and simulated callers) on a trial account. It covers the inbound trunk leg only. Outbound transfer legs are not included because no live transfer has been tested (Twilio does not offer China as a calling destination on this account, and Pakistani numbers could not be verified on a trial account).

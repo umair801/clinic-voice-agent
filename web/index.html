@@ -1,58 +1,271 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Clinic Phone Agent: No Silent Calls, No False Bookings</title>
+<meta name="description" content="An inbound clinic phone agent that books every family member once and says booked only when the clinic record confirms it. Test-call results with synthetic patients.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#fff;--fg:#14202b;--mut:#5b6b7a;--line:#dde4ea;--ok:#127a43;--bad:#b3261e;--pend:#8a5a00;--card:#f6f9fb}
-@media (prefers-color-scheme:dark){:root{--bg:#0f1720;--fg:#e8eef3;--mut:#9fb0bf;--line:#26333f;--ok:#4cc38a;--bad:#ff8a80;--pend:#f2b84b;--card:#16212c}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif}
-main{max-width:860px;margin:0 auto;padding:24px 16px 64px}h1{font-size:1.5rem;margin:.2em 0}h2{font-size:1.1rem;margin:1.8em 0 .5em}
-p.sub{color:var(--mut);margin:.3em 0}.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0}
-table{width:100%;border-collapse:collapse;font-size:.92rem}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
-.ok{color:var(--ok);font-weight:600}.bad{color:var(--bad);font-weight:600}.pend{color:var(--pend);font-weight:600}.mut{color:var(--mut)}
-.btn{font:inherit;font-weight:600;border:0;border-radius:8px;padding:10px 18px;cursor:pointer;background:var(--ok);color:#fff}
-.btn.stop{background:var(--bad)}.btn[disabled]{opacity:.55;cursor:default}
-#wc{display:none}#wcstat{margin:.6em 0 0;color:var(--mut)}
-@media(max-width:560px){th:nth-child(3),td:nth-child(3){display:none}}
-</style></head><body><main>
-<h1>Clinic phone agent: no silent calls, no false bookings</h1>
-<p class="sub">Clinics lose callers to dead air and wrong bookings. This agent answers inbound calls, books every family member exactly once, and says "booked" only when the clinic record confirms it.</p>
-<p class="sub">For community health centers and specialty practices. All patient data on this page is synthetic.</p>
-<div class="card" id="status">Loading results...</div>
-<div class="card" id="wc"><b>Talk to Ava now</b>
-<p class="sub">A live test call in your browser, no phone needed. Ava is an AI voice agent. Use headphones, allow the microphone, and use only the synthetic names below. Calls are logged for testing and end after a few minutes.</p>
-<button class="btn" id="wcbtn">Start test call</button>
-<p id="wcstat" role="status"></p></div>
-<h2>Try it with a synthetic patient</h2>
-<div class="card"><p class="sub">The agent books only patients who exist in the clinic record, and every record here is synthetic. Say a first name and date of birth from this list. Unknown names get "no matching record", never an invented one. Please do not give real personal details.</p>
-<table><tbody><tr><td>Maria</td><td>March 14, 1982</td><td class="mut">parent</td></tr><tr><td>Lucas</td><td>June 2, 2013</td><td class="mut">child</td></tr><tr><td>Sofia</td><td>September 21, 2016</td><td class="mut">child</td></tr><tr><td>Umair</td><td>May 20, 1990</td><td class="mut">adult, single visit</td></tr></tbody></table></div>
-<h2>Failure by failure</h2>
-<table id="tbl"><thead><tr><th>#</th><th>Failure</th><th>Baseline (simulated replay)</th><th>Now</th></tr></thead><tbody></tbody></table>
-<p class="mut" id="note"></p>
+:root{--paper:#f2f5f4;--card:#fff;--ink:#0d2b2e;--mut:#4f6669;--line:#d3dfdd;--teal:#0f6b6b;--tealdk:#0a5252;--ok:#0b7a4b;--pend:#8f5b00;--bad:#b3261e;--okbg:#e3f3ea;--pendbg:#fbefd6;--badbg:#fbe4e1;--r:6px}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.55 Figtree,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;font-weight:700;letter-spacing:-.015em;line-height:1.12;margin:0}
+a{color:var(--tealdk)}
+:focus-visible{outline:3px solid #1f8fff;outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:18px 0}
+.top b{font-family:"Bricolage Grotesque",sans-serif;font-size:1.05rem}
+.top nav a{margin-left:18px;font-weight:500;text-decoration:none}
+.top nav a:hover{text-decoration:underline}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:40px;align-items:start;padding:28px 0 48px}
+.hero h1{font-size:clamp(2.1rem,4.6vw,3.35rem)}
+.hero p{max-width:34em}
+.lede{font-size:1.12rem;margin:18px 0 8px}
+.who{color:var(--mut);margin:0}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0 10px;align-items:center}
+.btn{font:600 1rem Figtree,sans-serif;border:0;border-radius:var(--r);padding:12px 20px;cursor:pointer;background:var(--teal);color:#fff;text-decoration:none;display:inline-block}
+.btn:hover{background:var(--tealdk)}.btn.stop{background:var(--bad)}.btn[disabled]{opacity:.55;cursor:default}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+.btn.ghost:hover{background:var(--ink);color:#fff}
+#wc{display:none;margin:8px 0 0;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);max-width:34em}
+#wc p{margin:.3em 0;color:var(--mut);font-size:.93rem}#wcstat{min-height:1.4em}
+.small{font-size:.88rem;color:var(--mut)}
+/* replay */
+.replay{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 1px 0 var(--line)}
+.replay header{padding:16px 18px 0}
+.replay h2{font-size:1.15rem}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 0;padding:0 18px;border-bottom:1px solid var(--line)}
+.tab{font:500 .93rem Figtree,sans-serif;background:none;border:0;border-bottom:3px solid transparent;padding:8px 4px 9px;margin-right:12px;cursor:pointer;color:var(--mut)}
+.tab[aria-selected=true]{color:var(--ink);border-color:var(--teal);font-weight:600}
+.seg{display:inline-flex;margin:14px 18px 4px;border:1.5px solid var(--ink);border-radius:var(--r);overflow:hidden}
+.seg button{font:600 .9rem Figtree,sans-serif;background:var(--card);color:var(--ink);border:0;padding:7px 16px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+.evid{margin:0 18px;color:var(--mut);font-size:.86rem}
+ol.tl{list-style:none;margin:12px 18px 6px;padding:0;position:relative}
+ol.tl::before{content:"";position:absolute;left:62px;top:8px;bottom:8px;width:2px;background:var(--line)}
+ol.tl li{display:grid;grid-template-columns:52px 20px 1fr;gap:6px;padding:7px 0;align-items:start}
+.tm{font-variant-numeric:tabular-nums;text-align:right;color:var(--mut);font-size:.88rem;padding-top:2px}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--card);border:3px solid var(--mut);margin:5px 0 0 3px;position:relative}
+li.ok .dot{border-color:var(--ok)}li.bad .dot{border-color:var(--bad)}li.pend .dot{border-color:var(--pend)}
+li .ev{font-size:.95rem}
+.chip{display:inline-block;font-size:.78rem;font-weight:600;border-radius:99px;padding:1px 9px;margin-left:6px;vertical-align:1px}
+.chip.ok{background:var(--okbg);color:var(--ok)}.chip.bad{background:var(--badbg);color:var(--bad)}.chip.pend{background:var(--pendbg);color:var(--pend)}
+.out{margin:6px 18px 0;padding:10px 12px;border-left:4px solid var(--teal);background:#eef5f4;font-size:.93rem}
+.out.bad{border-color:var(--bad);background:var(--badbg)}
+.nm{margin:8px 18px 16px;color:var(--mut);font-size:.84rem}
+.swap{animation:sw .22s ease-out}@keyframes sw{from{opacity:.0}to{opacity:1}}
+/* proof */
+section{padding:34px 0}
+section h2{font-size:clamp(1.5rem,2.6vw,2rem);margin-bottom:8px}
+.proof{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
+.proof div{padding:18px;border-right:1px solid var(--line)}.proof div:last-child{border-right:0}
+.proof b{display:block;font:700 1.9rem "Bricolage Grotesque",sans-serif;letter-spacing:-.02em}
+.proof span{display:block;font-size:.93rem;margin-top:2px}
+.tag{display:inline-block;font-size:.78rem;font-weight:600;border-radius:var(--r);padding:1px 8px;background:#e4ecea;color:var(--ink);margin-top:8px}
+.tag.real{background:var(--okbg);color:var(--ok)}.tag.sim{background:#e3eefb;color:#1a4f96}.tag.off{background:#ece8f6;color:#4a3a86}.tag.no{background:var(--badbg);color:var(--bad)}
+/* table */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.filters button{font:500 .9rem Figtree,sans-serif;border:1.5px solid var(--line);background:var(--card);border-radius:99px;padding:5px 14px;cursor:pointer;color:var(--ink)}
+.filters button[aria-pressed=true]{border-color:var(--ink);background:var(--ink);color:#fff}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top;font-size:.93rem}
+th{font-weight:600;background:#eaf0ee}
+td:first-child{font-variant-numeric:tabular-nums;color:var(--mut);width:36px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.card h3{font-size:1.1rem;margin-bottom:8px}
+.card ul{margin:6px 0 0;padding-left:20px}.card li{margin:4px 0}
+.arch{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px;overflow-x:auto}
+.arch svg{min-width:760px;width:100%;height:auto;display:block}
+.arch text{font-family:Figtree,sans-serif;fill:var(--ink)}
+.nope{border:1.5px solid var(--bad);background:#fff;border-radius:var(--r);padding:18px 20px}
+.nope h2{font-size:1.3rem}
+.nope ul{columns:2;column-gap:36px;padding-left:20px;margin:10px 0 0}.nope li{margin:5px 0;break-inside:avoid}
+footer{padding:28px 0 60px;color:var(--mut);font-size:.9rem;border-top:1px solid var(--line)}
+@media(max-width:900px){.hero{grid-template-columns:1fr}.proof{grid-template-columns:1fr 1fr}.proof div:nth-child(2){border-right:0}.proof div:nth-child(-n+2){border-bottom:1px solid var(--line)}.two{grid-template-columns:1fr}.nope ul{columns:1}}
+@media(max-width:700px){#tbl thead{display:none}#tbl,#tbl tbody,#tbl tr,#tbl td{display:block;width:auto}#tbl tr{padding:12px 14px;border-bottom:1px solid var(--line)}#tbl td{border:0;padding:2px 0}#tbl td:first-child{display:inline-block;width:auto;margin-right:8px}#tbl td:nth-child(2){display:inline;font-weight:600}#tbl td:nth-child(3){color:var(--mut);font-size:.86rem;margin-top:4px}#tbl td:nth-child(3)::before{content:"Before: "}#tbl td:nth-child(5){margin-top:6px}.top nav a{margin-left:12px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.swap{animation:none}}
+</style></head><body>
+<div class="wrap">
+<div class="top"><b>Datawebify</b><nav><a href="https://github.com/umair801/clinic-voice-agent">GitHub</a><a href="https://www.upwork.com/freelancers/umair801">Upwork</a></nav></div>
+
+<div class="hero">
+ <div>
+  <h1>A clinic phone agent that says "booked" only when the record says so</h1>
+  <p class="lede">Clinics lose callers to dead air and wrong bookings. This agent answers inbound calls, books every family member exactly once, and tells the caller "booked" only after the clinic record confirms it.</p>
+  <p class="who">Built for community health centers and specialty practices. All patient data here is synthetic.</p>
+  <div class="cta">
+   <a class="btn ghost" href="tel:+12764441589">Call +1 276 444 1589</a>
+  </div>
+  <p class="small">The phone line is a test line on a Twilio trial account, so a short trial notice may play first. Calls are logged for testing.</p>
+  <div id="wc"><b>Talk to Ava in your browser</b>
+   <p>Ava is an AI voice agent. Use headphones, allow the microphone, and use only the synthetic names in the table below. Calls end after a few minutes.</p>
+   <button class="btn" id="wcbtn">Start test call</button>
+   <p id="wcstat" role="status"></p></div>
+ </div>
+
+ <div class="replay" id="rp">
+  <header><h2>Replay a test call, event by event</h2></header>
+  <div class="tabs" role="tablist" aria-label="Scenario"></div>
+  <div class="seg" role="group" aria-label="Version"><button data-v="before" aria-pressed="false">Before</button><button data-v="now" aria-pressed="true">Now</button></div>
+  <p class="evid" id="rpev"></p>
+  <ol class="tl" id="rptl"></ol>
+  <div class="out" id="rpout"></div>
+  <p class="nm" id="rpnm"></p>
+ </div>
+</div>
+
+<section style="padding-top:8px">
+ <div class="proof" id="proof">
+  <div><b id="p1">61 of 61</b><span>offline safeguard checks pass</span><i class="tag off">Offline eval</i></div>
+  <div><b>0</b><span>duplicate bookings or false "booked" claims in 23 simulated calls</span><i class="tag sim">Simulated caller</i></div>
+  <div><b>1.9s</b><span>median reply in 6 real test calls. The 1.5s target is not met.</span><i class="tag real">Real test call</i></div>
+  <div><b>$0.0006 to $0.0031</b><span>model cost per call minute, measured</span><i class="tag real">Real test call</i></div>
+ </div>
+ <p class="small" style="margin-top:8px">Test-call results with synthetic patients, not production calls. <a href="https://github.com/umair801/clinic-voice-agent">Evals, results and runbook on GitHub</a>.</p>
+</section>
+
+<section>
+ <h2>Try it with a synthetic patient</h2>
+ <p style="max-width:44em">The agent books only patients who exist in the clinic record. Say a first name and date of birth from this list. An unknown name gets "no matching record", never an invented one. Please do not give real personal details.</p>
+ <table style="max-width:560px"><tbody>
+  <tr><td></td><td>Maria</td><td>March 14, 1982</td><td>parent</td></tr>
+  <tr><td></td><td>Lucas</td><td>June 2, 2013</td><td>child</td></tr>
+  <tr><td></td><td>Sofia</td><td>September 21, 2016</td><td>child</td></tr>
+  <tr><td></td><td>Umair</td><td>May 20, 1990</td><td>adult, single visit</td></tr>
+ </tbody></table>
+</section>
+
+<section>
+ <h2>Eleven failures, one by one</h2>
+ <p style="max-width:44em">Each failure from the original bad call has a repeatable test and a measured result. The tag says how it was measured.</p>
+ <div class="filters" id="flt" role="group" aria-label="Filter by evidence"></div>
+ <table id="tbl"><thead><tr><th>#</th><th>Failure</th><th>Before (simulated replay)</th><th>Now</th><th>Measured by</th></tr></thead><tbody></tbody></table>
+ <p class="small" style="margin-top:8px">The Before column replays the reported failing call in simulation. It is not a real call.</p>
+</section>
+
+<section>
+ <h2>How a call flows</h2>
+ <div class="arch"><svg viewBox="0 0 900 250" role="img" aria-label="Architecture: caller or browser to Twilio SIP or LiveKit, then the voice worker with speech to text, language model and text to speech, then the FastAPI backend and Supabase. A release gate checks every change.">
+  <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="#4f6669"/></marker></defs>
+  <g fill="#fff" stroke="#0d2b2e" stroke-width="1.5">
+   <rect x="10" y="20" width="120" height="44" rx="6"/><rect x="10" y="90" width="120" height="44" rx="6"/>
+   <rect x="170" y="55" width="130" height="44" rx="6"/>
+   <rect x="340" y="20" width="250" height="150" rx="6" fill="#eef5f4"/>
+   <rect x="640" y="20" width="130" height="44" rx="6"/><rect x="640" y="90" width="130" height="44" rx="6"/>
+   <rect x="340" y="196" width="250" height="40" rx="6" stroke-dasharray="5 4"/>
+  </g>
+  <g font-size="14" text-anchor="middle">
+   <text x="70" y="47">Phone caller</text><text x="70" y="117">Browser call</text>
+   <text x="235" y="74">Twilio SIP</text><text x="235" y="91" font-size="12" fill="#4f6669">and LiveKit</text>
+   <text x="465" y="42" font-weight="600">Voice worker</text>
+   <text x="705" y="47">FastAPI backend</text><text x="705" y="117">Supabase</text>
+   <text x="465" y="221">Release gate: evals, canary, rollback</text>
+  </g>
+  <g font-size="13" text-anchor="middle">
+   <rect x="355" y="54" width="220" height="30" rx="4" fill="#fff" stroke="#9fb5b3"/><text x="465" y="74">Deepgram speech to text</text>
+   <rect x="355" y="92" width="220" height="30" rx="4" fill="#fff" stroke="#9fb5b3"/><text x="465" y="112">Claude Haiku, Sonnet for hard turns</text>
+   <rect x="355" y="130" width="220" height="30" rx="4" fill="#fff" stroke="#9fb5b3"/><text x="465" y="150">ElevenLabs text to speech</text>
+  </g>
+  <g stroke="#4f6669" stroke-width="1.5" fill="none" marker-end="url(#ar)">
+   <path d="M130 42L170 68"/><path d="M130 112L170 88"/><path d="M300 77L340 77"/><path d="M590 60L640 42"/><path d="M590 120L640 112"/><path d="M705 64L705 90"/>
+  </g></svg></div>
+ <p class="small" style="margin-top:8px">The call workflow step is held outside the model, so a fallback model resumes at the same step. Bookings carry an idempotency key and return booked, pending or failed.</p>
+</section>
+
+<section>
+ <div class="two">
+  <div class="card"><h3>Cost per call minute</h3>
+   <table><tbody>
+    <tr><td>Language model</td><td>$0.0006 to $0.0031</td><td><i class="tag real">Measured</i></td></tr>
+    <tr><td>Twilio trunk, inbound leg</td><td>$0.0034 (59 min, Nov 1 to 17)</td><td><i class="tag real">Measured</i></td></tr>
+    <tr><td>Speech to text</td><td>$0.0092 list price</td><td><i class="tag">Vendor price</i></td></tr>
+    <tr><td>Voice (text to speech)</td><td>not yet</td><td><i class="tag no">Not measured</i></td></tr>
+    <tr><td>LiveKit</td><td>not yet</td><td><i class="tag no">Not measured</i></td></tr>
+   </tbody></table>
+   <p class="small" style="margin-bottom:0">An estimated all-in cost, excluding telephony, is $0.018 to $0.030 per minute. It is an estimate, not a measurement.</p>
+  </div>
+  <div class="card"><h3>Safeguards that are built</h3>
+   <ul><li>Bookings are idempotent: one attempt, one appointment, no blind retries.</li>
+   <li>The agent hangs up only after the caller says goodbye and no work is pending.</li>
+   <li>A silent caller is reprompted twice, then the call closes.</li>
+   <li>Config and prompts live in the repo as versioned releases with an eval gate and a one-command rollback.</li>
+   <li>Call events and cost per turn are logged. The log stores events, not what was said.</li></ul>
+  </div>
+ </div>
+</section>
+
+<section>
+ <div class="nope"><h2>What we do not claim</h2>
+ <ul>
+  <li>These are test calls by the builder and simulated callers. They are not production calls.</li>
+  <li>No real patients. Every record is synthetic. No HIPAA or other compliance claim.</li>
+  <li>Human transfer to a live person is built but not proven on a live line.</li>
+  <li>Phone stability over many calls is not proven. Some phone calls dropped.</li>
+  <li>The 1.5s reply target is not met. The working target is 2.0s.</li>
+  <li>Overlapping speech on real audio is not measured.</li>
+  <li>The spelling fallback for a misheard name is tested offline, not on a real call.</li>
+  <li>Voice and LiveKit costs are not measured yet.</li>
+ </ul></div>
+</section>
+<footer>Datawebify. Built by Muhammad Umair. <a href="https://github.com/umair801/clinic-voice-agent">GitHub</a> and <a href="https://www.upwork.com/freelancers/umair801">Upwork profile</a>.</footer>
+</div>
+
 <script>
+/* ---- Replay data: taken from the event logs in results/ (simulated test calls, no transcripts) ---- */
+const SCN=[
+{id:"lookup",tab:"Patient lookup",
+ before:{ev:"Baseline replay of the reported call",rows:[["0.0s","Lookup starts",""],["0 to 7.8s","Caller hears nothing for 7.8 seconds","bad"],["7.8s","Lookup returns",""]],out:"Dead air for 7.8 seconds. Callers say \"hello?\" and hang up.",bad:1,nm:"Replay of the reported failure, not a real call."},
+ now:{ev:"2 simulated-caller calls, synthetic voice and patients",rows:[["0.0s","Lookup starts, one 9 second attempt",""],["1.0s","Ava says a short filler line","ok"],["6.0s","Ava repeats a filler line","ok"],["8.0s","Lookup returns, patient found","ok"],["next","Booking made once","ok"]],out:"Lookup succeeded at 8.0s with the filler logged, in 2 of 2 calls. 1 appointment each, 0 duplicates.",nm:"Not measured: the silence between filler lines (needs the recording) and real phone calls."}},
+{id:"lost",tab:"Lost booking reply",
+ before:{ev:"Baseline replay of the reported call",rows:[["0.0s","Booking request sent",""],["timeout","The reply never arrives","bad"],["then","Ava says \"You're all booked\" with no confirmation","bad"],["then","Backend retries silently",""]],out:"A false \"booked\" claim and a hidden retry that can create a duplicate.",bad:1,nm:"Replay of the reported failure, not a real call."},
+ now:{ev:"Simulated-caller test call, reply lost on purpose",rows:[["0.0s","Booking request sent, attempt 1",""],["timeout","Reply lost (BackendTimeout)","pend"],["next","Ava reads the clinic record instead of guessing","ok"],["next","Record says booked, so status booked is confirmed","ok"]],out:"1 attempt, 1 appointment in the database, 0 blind retries, 0 false \"booked\".",nm:"Not measured: the exact words spoken (the log keeps events only). The pending and failed paths are covered by offline evals, not live."}},
+{id:"silent",tab:"Caller goes silent",
+ before:{ev:"1 real phone test call, earlier handler",rows:[["8s","One reprompt",""],["8s to 53s","45 more seconds of silence, no close","bad"],["68s","Caller hangs up","bad"]],out:"The line stayed open with no close. That costs money and blocks the line.",bad:1,nm:"Found by testing, fixed, then re-tested in simulation."},
+ now:{ev:"1 simulated-caller call, fixed handler",rows:[["0s","Ava answers the caller's hello",""],["8s","Reprompt 1","ok"],["16s","Reprompt 2","ok"],["44s","Goodbye, Ava ends the call","ok"]],out:"Logged events: silence_reprompt twice, silence_close, call_end. 0 appointments.",nm:"Not measured: the fixed handler on a real phone call."}}];
+(function(){
+ const tabs=document.querySelector("#rp .tabs"),tl=document.getElementById("rptl"),ev=document.getElementById("rpev"),out=document.getElementById("rpout"),nm=document.getElementById("rpnm");
+ let cur=0,ver="now";
+ function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+ function draw(){
+  const d=SCN[cur][ver];
+  [...tabs.children].forEach((b,i)=>b.setAttribute("aria-selected",i===cur));
+  document.querySelectorAll("#rp .seg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===ver));
+  ev.textContent=d.ev;tl.textContent="";
+  d.rows.forEach(r=>{const li=el("li",r[2]);li.appendChild(el("span","tm",r[0]));li.appendChild(el("span","dot"));li.appendChild(el("span","ev",r[1]));tl.appendChild(li)});
+  out.textContent=d.out;out.className="out"+(d.bad?" bad":"");nm.textContent=d.nm;
+  [tl,out].forEach(x=>{x.classList.remove("swap");void x.offsetWidth;x.classList.add("swap")});
+ }
+ SCN.forEach((s,i)=>{const b=el("button","tab",s.tab);b.setAttribute("role","tab");b.addEventListener("click",()=>{cur=i;draw()});tabs.appendChild(b)});
+ document.querySelectorAll("#rp .seg button").forEach(b=>b.addEventListener("click",()=>{ver=b.dataset.v;draw()}));
+ draw();
+})();
+/* ---- Failure table ---- */
 const FAILS=[
-[1,"Silence while patient lookup runs","identify_patient: 7.8s of dead air","Filler line after 1s, repeated every 4s; one 9s lookup attempt. Test: a 7.8s lookup was injected and succeeded at 8.0s with the filler logged, in 2 of 2 simulated calls."],
-[2,"Callers keep saying hello?","9.0s gap after a caller turn","Reply median 1.9s, p95 2.78s over 43 turns in 6 real test calls; above the 1.5s target (not met), within the 2.0s working target. No unanswered turns."],
-[3,"Two half-answers stitched together","2.0s overlapping speech","Adaptive interruption configured. Overlap on real audio is not measured yet."],
-[4,"Whole call switches to Spanish","Switched on 'Si, correct'","'Si' did not switch the call in 2 of 2 simulated calls. Switch only on a clear request or a full Spanish sentence; switch back on request."],
-[5,"Says booked after a timeout","False 'booked' claim, silent retry","Test: booking response lost on purpose. The agent confirmed from the clinic record: 1 attempt, 1 appointment, no false 'booked'."],
-[6,"Duplicate parent, no children","Parent 2, children 0","Simulated: 3 of 3 family calls, no duplicates. Real phone call: parent and both children booked once each."],
-[7,"Ends call mid-booking","Hung up with a booking pending","Ended only after the caller's goodbye with no pending work, in every completed test call. A silent caller is reprompted twice, then the call closes."],
-[8,"Fallback model skips steps","Skipped identity steps","Workflow step is derived from external state (offline evals). In real calls the larger-model route was silently answered by the small model because of a request error; fixed and checked against the live API, not yet re-measured on a call. Step handling after a fallback is not measured live."],
-[9,"160K-character prompt","160,000 chars","About 2,000 character prompt plus retrieval. Provider answers matched the knowledge base in 3 of 3 test calls."],
-[10,"Cost per minute","$0.1326 modeled","About $0.0022 per minute in the 6 real test calls (simulated calls lower), LLM only. STT, TTS and telephony are not measured yet."],
-[11,"Dashboard edits vanish","Edit lost on deploy","Config and prompts in the repo, versioned. An eval gate blocks a bad change; rollback is one command."]];
-const tb=document.querySelector("#tbl tbody");
-FAILS.forEach(f=>{const tr=document.createElement("tr");f.forEach(c=>{const td=document.createElement("td");td.textContent=c;tr.appendChild(td)});tb.appendChild(tr)});
-fetch("/api/results/evals").then(r=>r.json()).catch(()=>({})).then(e=>{
- const s=document.getElementById("status");
- let h="";
- h+= e.total?`<div><span class="ok">${e.passed}/${e.total}</span> orchestration evals passed <span class="mut">(stub model: tests the safeguards, not the language model)</span></div>`:"";
- h+=`<div style="margin-top:8px"><b>Test-call results</b> <span class="mut">(synthetic patients, not production)</span></div>`;
- h+=`<ul style="margin:6px 0 0;padding-left:20px"><li>23 simulated-caller calls: every booking made exactly once, 0 duplicates, 0 false "booked" claims; provider answers matched the knowledge base.</li><li>10 real calls by the builder (browser and phone): bookings made once per patient, a misheard name found no record and invented none, every call that finished ended after the goodbye.</li><li>Reply latency in real calls: median 1.9s to 2.3s (1.5s target not met, 2.0s working target met in some batches).</li><li>Model cost: about $0.0006 to $0.0031 per call minute, measured. Estimated all-in about $0.018 to $0.030 per minute, excluding telephony.</li><li>Not proven yet: phone stability over many calls, human transfer on a live line, native-speaker callers.</li></ul>`;
- h+=`<div style="margin-top:8px"><a href="https://github.com/umair801/clinic-voice-agent">GitHub: code, eval results, runbook</a></div>`;
- s.innerHTML=h;});
-document.getElementById("note").textContent="Baseline column is a simulation of the reported failing call, not a real call. Results are test calls with synthetic patients, not production calls with real patients.";
-</script></main><script src="https://cdn.jsdelivr.net/npm/livekit-client@2.15.0/dist/livekit-client.umd.min.js"></script>
+[1,"Silence while patient lookup runs","identify_patient: 7.8s of dead air","Filler line after 1s, repeated every 4s. A 7.8s lookup succeeded at 8.0s with the filler logged, in 2 of 2 simulated calls.","sim"],
+[2,"Callers keep saying hello?","9.0s gap after a caller turn","Reply median 1.9s, p95 2.78s over 43 turns in 6 real test calls. Above the 1.5s target, within the 2.0s working target. No unanswered turns.","real"],
+[3,"Two half-answers stitched together","2.0s of overlapping speech","Adaptive interruption is configured. Overlap on real audio is not measured yet.","no"],
+[4,"Whole call switches to Spanish","Switched on \"Si, correct\"","\"Si\" did not switch the call in 2 of 2 simulated calls. Ava switches only on a clear request or a full Spanish sentence, and switches back on request.","sim"],
+[5,"Says booked after a timeout","False \"booked\" claim, silent retry","Reply lost on purpose. Ava confirmed from the clinic record: 1 attempt, 1 appointment, no false \"booked\".","sim"],
+[6,"Duplicate parent, no children","Parent 2, children 0","Simulated: 3 of 3 family calls with no duplicates. Real phone call: parent and both children booked once each.","real"],
+[7,"Ends call mid-booking","Hung up with a booking pending","Every completed test call ended only after the caller's goodbye with no pending work. A silent caller is reprompted twice, then the call closes.","real"],
+[8,"Fallback model skips steps","Skipped identity steps","The workflow step comes from external state (offline evals). In real calls the larger-model route was silently answered by the small model because of a request error. Fixed and checked against the live API, not re-measured on a call.","off"],
+[9,"160K-character prompt","160,000 characters","About 2,000 characters plus retrieval. Provider answers matched the knowledge base in 3 of 3 test calls.","real"],
+[10,"Cost per minute","$0.1326 modeled","Language model about $0.0022 per minute in 6 real test calls. Twilio trunk $0.0034 measured. Speech, voice and LiveKit are not measured.","real"],
+[11,"Dashboard edits vanish","Edit lost on deploy","Config and prompts live in the repo as versioned releases. An eval gate blocks a bad change, and rollback is one command (drilled offline, not timed live).","off"]];
+const LBL={real:"Real test call",sim:"Simulated caller",off:"Offline eval",no:"Not measured"};
+(function(){
+ const tb=document.querySelector("#tbl tbody"),fl=document.getElementById("flt");let on="all";
+ function draw(){tb.textContent="";FAILS.filter(f=>on==="all"||f[4]===on).forEach(f=>{const tr=document.createElement("tr");
+  [f[0],f[1],f[2],f[3]].forEach(c=>{const td=document.createElement("td");td.textContent=c;tr.appendChild(td)});
+  const t=document.createElement("td"),s=document.createElement("i");s.className="tag "+f[4];s.textContent=LBL[f[4]];t.appendChild(s);tr.appendChild(t);tb.appendChild(tr)});
+  [...fl.children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===on))}
+ [["all","All 11"],["real","Real test call"],["sim","Simulated caller"],["off","Offline eval"],["no","Not measured"]].forEach(([k,t])=>{const b=document.createElement("button");b.dataset.k=k;b.textContent=t;b.addEventListener("click",()=>{on=k;draw()});fl.appendChild(b)});
+ draw();
+})();
+fetch("/api/results/evals").then(r=>r.json()).catch(()=>({})).then(e=>{if(e&&e.total)document.getElementById("p1").textContent=e.passed+" of "+e.total});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.15.0/dist/livekit-client.umd.min.js"></script>
 <script>
 (function(){
  const box=document.getElementById("wc"),btn=document.getElementById("wcbtn"),st=document.getElementById("wcstat");

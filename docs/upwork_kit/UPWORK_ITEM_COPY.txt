@@ -1,0 +1,17 @@
+Title (37 characters):
+Clinic Voice Agent: No False Bookings
+
+Description (261 characters):
+Inbound clinic phone agent on a real number. Books every family member once, says booked only when the clinic record confirms it, and logs latency and cost per turn. Built for community health centers. Test-call results with synthetic patients, not production.
+
+Skills to add (from your profile):
+AI Voice Agent Development, Appointment Scheduling, Twilio, ElevenLabs, AI Agent Development
+
+Images, in this order:
+1. 1_cover_1000x750.png (cover)
+2. 4_call_replay_1000x750.png
+3. 3_before_after_1000x750.png
+4. 2_architecture_1000x750.png
+
+Attach: case_study_clinic_voice_agent.pdf
+Project link: https://clinic.datawebify.com

@@ -1,7 +1,7 @@
 {
   "label": "receptionist orchestration evals, mock EHR, stub model",
-  "passed": 24,
-  "total": 24,
+  "passed": 25,
+  "total": 25,
   "results": [
     {
       "name": "verified_caller_reaches_help_step",
@@ -122,6 +122,11 @@
       "name": "fallback_model_gets_the_same_step_from_state_alone",
       "passed": true,
       "detail": "a second core built on the same state resumes at the same step"
+    },
+    {
+      "name": "simulated_demo_practice_supports_the_full_flow",
+      "passed": true,
+      "detail": "seeded visit found True, reschedule booked, now holds the new time True"
     }
   ]
 }

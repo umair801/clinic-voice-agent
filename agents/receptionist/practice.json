@@ -1,0 +1,10 @@
+{
+  "name": "Riverside Family Medicine (synthetic demo practice)",
+  "hours": "Monday to Friday, 8 AM to 5 PM. Closed weekends and public holidays.",
+  "location": "One demo address, 100 Example Street. This is a synthetic practice used for testing.",
+  "services": "Primary care visits, annual physicals, follow-up visits, vaccinations, and lab draws by appointment.",
+  "new_patient": "New patients can book a new patient visit once the caller is verified.",
+  "after_hours": "For emergencies call 911. For urgent questions after hours, leave a message and a staff member will call back the next business day.",
+  "cancellation": "Please give at least 24 hours notice to cancel or move a visit.",
+  "insurance": "Insurance questions are handled by the billing team. Take a message for them."
+}

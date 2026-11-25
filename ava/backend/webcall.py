@@ -4,12 +4,15 @@ Public endpoint, so every limit here protects the owner's bill. Counters live in
 backend restarts (a deploy), which is acceptable for a demo: the global cap is enforced again from zero.
 Nothing here touches patient data. Switch the whole feature off with WEB_CALL_ENABLED unset or 0.
 """
+import json
 import os
 import time
 import uuid
 from datetime import timedelta
 
-AGENT_NAME = "clinic-ava"
+from ava import profiles
+
+AGENT_NAME = profiles.WORKER_NAME   # one worker serves every agent; the agent_id travels in the dispatch metadata
 
 
 def _int(env, key, default):
@@ -70,13 +73,18 @@ def new_room():
     return f"web-{uuid.uuid4().hex[:12]}"
 
 
-def make_token(room, key, secret, max_seconds=240):
-    """Join-only token for one room. The agent is dispatched when the caller joins, so the greeting is heard."""
+def make_token(room, key, secret, max_seconds=240, agent_id=None, ehr_mode=None):
+    """Join-only token for one room. The agent is dispatched when the caller joins, so the greeting is heard.
+    agent_id picks the agent profile; it must already be validated against the registry by the caller."""
     from livekit import api
+    meta_d = {"agent_id": profiles.normalize(agent_id)}
+    if ehr_mode:                  # only the backend sets this, and only after the preview key was checked
+        meta_d["ehr_mode"] = ehr_mode
+    meta = json.dumps(meta_d)
     identity = f"web-caller-{uuid.uuid4().hex[:6]}"
     return (api.AccessToken(key, secret).with_identity(identity).with_name("Web caller")
             .with_ttl(timedelta(seconds=max_seconds + 120))
             .with_grants(api.VideoGrants(room_join=True, room=room, can_publish=True, can_subscribe=True,
                                          can_publish_data=False))
-            .with_room_config(api.RoomConfiguration(agents=[api.RoomAgentDispatch(agent_name=AGENT_NAME)]))
+            .with_room_config(api.RoomConfiguration(agents=[api.RoomAgentDispatch(agent_name=AGENT_NAME, metadata=meta)]))
             .to_jwt())

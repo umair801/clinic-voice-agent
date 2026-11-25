@@ -1,0 +1,21 @@
+{
+  "default": "clinic",
+  "agents": {
+    "clinic": {
+      "title": "Clinic Front Desk",
+      "kind": "clinic",
+      "status": "live",
+      "config": "config/agent.json",
+      "releases": "releases",
+      "evals": "evals.run"
+    },
+    "receptionist": {
+      "title": "HIPAA Medical Practice Receptionist",
+      "kind": "receptionist",
+      "status": "draft",
+      "config": "agents/receptionist/agent.json",
+      "releases": "agents/receptionist/releases",
+      "evals": "evals.receptionist"
+    }
+  }
+}

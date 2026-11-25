@@ -25,6 +25,7 @@ from ava import guards
 from ava.backend.client import HttpTransport
 from ava.core import AvaCore
 from ava.output_guard import GOODBYE_WORDS, SentenceGuard, violations
+from ava import profiles
 from ava.release import load_release, pick_version, ROOT
 from ava.state import Step
 from ava.telemetry import CallLogger, TurnRecord
@@ -48,16 +49,22 @@ SILENCE = {"en": "Are you still there?", "es": "¿Sigue ahí?"}
 GOODBYE_LINE = {"en": "Thank you for calling. Goodbye.", "es": "Gracias por llamar. Adiós."}
 
 
-def load_config(call_id):
+def line(cfg, key, default, lang):
+    """Spoken line for this agent: the release config's "lines" entry if it has one, else the clinic default."""
+    table = (cfg.get("lines") or {}).get(key) or default
+    return table.get(lang) or table["en"]
+
+
+def load_config(call_id, agent_id=None):
     pointer_version = os.getenv("AGENT_RELEASE", "current")
     if pointer_version == "current":
-        v = pick_version(call_id)
+        v = pick_version(call_id, agent_id=agent_id)
         if v is None:   # no release published yet: fall back to the working copy, and say so in the log
-            cfg = json.load(open(os.path.join(ROOT, "config", "agent.json")))
+            cfg = json.load(open(profiles.get(agent_id)["config_path"]))
             return cfg, open(os.path.join(ROOT, cfg["prompt_file"])).read(), {"version": cfg["version"] + "-unpublished", "hash": "none"}
     else:
-        v = pointer_version
-    return load_release(v)
+        v = pointer_version   # AGENT_RELEASE pins a version of the DEFAULT agent only (see docs/RUNBOOK.md)
+    return load_release(v, agent_id=agent_id)
 
 
 def thinking_arg(model: str, mode: str):
@@ -98,8 +105,14 @@ def build_llms(cfg):
             "large": llm.FallbackAdapter([large, small], attempt_timeout=8.0)}
 
 
-class AvaAgent(Agent):
-    def __init__(self, core: AvaCore, prompt: str, llms: dict, cfg: dict, manifest: dict, ctx: JobContext):
+class VoiceAgentBase(Agent):
+    """Everything an agent of ANY kind shares: per-turn hook, streaming output guard, filler, transfer and end_call.
+    Subclasses add their own tools and may swap the guard, the claim check and the filler table."""
+    guard_cls = SentenceGuard
+    violations_fn = staticmethod(violations)
+    fillers = FILLER_BY_TOOL
+
+    def __init__(self, core, prompt: str, llms: dict, cfg: dict, manifest: dict, ctx: JobContext):
         super().__init__(instructions=prompt + "\n\n" + core.state.instruction(), llm=llms["small"])
         self.core, self.base_prompt, self.llms, self.cfg, self.manifest, self.ctx = core, prompt, llms, cfg, manifest, ctx
         self.cur_tier, self.cur_reason = "small", "routine turn"
@@ -130,7 +143,7 @@ class AvaAgent(Agent):
 
     # ---- output guard: a false "booked" claim is replaced BEFORE the caller hears it ----
     async def llm_node(self, chat_ctx, tools, model_settings):
-        guard = SentenceGuard(self.core.state, on_block=lambda v, s: self.core.log.event(
+        guard = self.guard_cls(self.core.state, on_block=lambda v, s: self.core.log.event(
             "claim_blocked", level="warn", detail=v, text=s[:200]))
         async for chunk in Agent.default.llm_node(self, chat_ctx, tools, model_settings):
             delta = getattr(chunk, "delta", None)
@@ -170,11 +183,11 @@ class AvaAgent(Agent):
         if any(n in ("end_call", "request_human_transfer") for n in names):
             return ""
         for n in names:                                  # prefer the most informative line
-            if n in FILLER_BY_TOOL and FILLER_BY_TOOL[n] is not SHORT_FILLER:
-                return FILLER_BY_TOOL[n][self.core.state.language] + " "
+            if n in self.fillers and self.fillers[n] is not SHORT_FILLER:
+                return self.fillers[n][self.core.state.language] + " "
         for n in names:
-            if n in FILLER_BY_TOOL:
-                return FILLER_BY_TOOL[n][self.core.state.language] + " "
+            if n in self.fillers:
+                return self.fillers[n][self.core.state.language] + " "
         return ""
 
     def _logged_filler(self, text, tool):
@@ -186,6 +199,56 @@ class AvaAgent(Agent):
 
     def _record(self, name):
         self.last_tools.append(name)
+
+    @function_tool
+    async def request_human_transfer(self, context: RunContext, reason: str):
+        """Transfer the caller to a person at the clinic."""
+        self._record("request_human_transfer")
+        res = await self.core.request_human_transfer(reason)
+        if not res.get("ok"):
+            return {"ok": False, "say": res["reason"]}
+        number = os.getenv("HUMAN_TRANSFER_NUMBER", "")
+        if any(str(x.identity).startswith("web-caller") for x in self.ctx.room.remote_participants.values()):
+            # Browser test line: there is no phone leg to transfer, so take a callback instead.
+            self.core.transfer_failed()
+            res = await self.core.leave_callback(f"web test line, no phone transfer: {reason}")
+            return {"ok": False, "say": callback_say(res)}
+        if not number:
+            self.core.transfer_failed()
+            res = await self.core.leave_callback(f"transfer requested, no transfer number configured: {reason}")
+            return {"ok": False, "say": callback_say(res)}
+        try:
+            await context.session.say("One moment, I am connecting you to a person.")
+            identity = next(iter(self.ctx.room.remote_participants.values())).identity
+            await self.ctx.api.sip.transfer_sip_participant(api.TransferSIPParticipantRequest(
+                participant_identity=identity, room_name=self.ctx.room.name, transfer_to=f"tel:{number}", play_dialtone=False))
+            return {"ok": True}
+        except Exception as e:
+            self.core.log.event("transfer_failed", level="error", error=type(e).__name__)
+            self.core.transfer_failed()
+            res = await self.core.leave_callback(f"transfer failed: {reason}")
+            return {"ok": False, "say": "The transfer did not work. " + callback_say(res)}
+
+    @function_tool
+    async def end_call(self, context: RunContext):
+        """End the call. Only allowed after the caller said goodbye and nothing is pending."""
+        self._record("end_call")
+        self.core.agent_said_goodbye()
+        d = self.core.end_call_check()
+        if not d.allowed:
+            self.core.state.agent_goodbye_said = False
+            return {"ended": False, "reason": d.reason, "say": "Do not end the call. Continue helping."}
+        self.end_reason = "agent_ended_call_after_goodbye"
+        if GOODBYE_WORDS.search(self._reply_text):
+            await context.wait_for_playout()          # let the model's own goodbye finish; do not say a second one
+        else:
+            await context.session.say(line(self.cfg, "goodbye", GOODBYE_LINE, self.core.state.language), allow_interruptions=False)
+        await self.ctx.api.room.delete_room(api.DeleteRoomRequest(room=self.ctx.room.name))
+        return {"ended": True}
+
+
+class AvaAgent(VoiceAgentBase):
+    """The clinic front desk agent: its own tools on top of the shared base."""
 
     # ---- tools ------------------------------------------------------------
     @function_tool
@@ -240,52 +303,6 @@ class AvaAgent(Agent):
         self._record("read_back_summary")
         return await self.core.read_back_summary()
 
-    @function_tool
-    async def request_human_transfer(self, context: RunContext, reason: str):
-        """Transfer the caller to a person at the clinic."""
-        self._record("request_human_transfer")
-        res = await self.core.request_human_transfer(reason)
-        if not res.get("ok"):
-            return {"ok": False, "say": res["reason"]}
-        number = os.getenv("HUMAN_TRANSFER_NUMBER", "")
-        if any(str(x.identity).startswith("web-caller") for x in self.ctx.room.remote_participants.values()):
-            # Browser test line: there is no phone leg to transfer, so take a callback instead.
-            self.core.transfer_failed()
-            res = await self.core.leave_callback(f"web test line, no phone transfer: {reason}")
-            return {"ok": False, "say": callback_say(res)}
-        if not number:
-            self.core.transfer_failed()
-            res = await self.core.leave_callback(f"transfer requested, no transfer number configured: {reason}")
-            return {"ok": False, "say": callback_say(res)}
-        try:
-            await context.session.say("One moment, I am connecting you to a person.")
-            identity = next(iter(self.ctx.room.remote_participants.values())).identity
-            await self.ctx.api.sip.transfer_sip_participant(api.TransferSIPParticipantRequest(
-                participant_identity=identity, room_name=self.ctx.room.name, transfer_to=f"tel:{number}", play_dialtone=False))
-            return {"ok": True}
-        except Exception as e:
-            self.core.log.event("transfer_failed", level="error", error=type(e).__name__)
-            self.core.transfer_failed()
-            res = await self.core.leave_callback(f"transfer failed: {reason}")
-            return {"ok": False, "say": "The transfer did not work. " + callback_say(res)}
-
-    @function_tool
-    async def end_call(self, context: RunContext):
-        """End the call. Only allowed after the caller said goodbye and nothing is pending."""
-        self._record("end_call")
-        self.core.agent_said_goodbye()
-        d = self.core.end_call_check()
-        if not d.allowed:
-            self.core.state.agent_goodbye_said = False
-            return {"ended": False, "reason": d.reason, "say": "Do not end the call. Continue helping."}
-        self.end_reason = "agent_ended_call_after_goodbye"
-        if GOODBYE_WORDS.search(self._reply_text):
-            await context.wait_for_playout()          # let the model's own goodbye finish; do not say a second one
-        else:
-            await context.session.say(GOODBYE_LINE[self.core.state.language], allow_interruptions=False)
-        await self.ctx.api.room.delete_room(api.DeleteRoomRequest(room=self.ctx.room.name))
-        return {"ended": True}
-
 
 def build_session(cfg):
     t = cfg["turn"]
@@ -316,23 +333,46 @@ def callback_say(res):
             + ". Read the reference slowly, one character at a time, once.")
 
 
-@server.rtc_session(agent_name="clinic-ava")
+@server.rtc_session(agent_name=profiles.WORKER_NAME)
 async def entrypoint(ctx: JobContext):
     await ctx.connect()
     call_id = f"call_{uuid.uuid4().hex[:10]}"
-    cfg, prompt, manifest = load_config(call_id)
+    # One worker serves every agent. The web call token carries {"agent_id": ...} in the dispatch metadata; phone calls
+    # carry none and get the default agent, so the live phone line behaves exactly as before.
+    requested = profiles.agent_id_from_metadata(getattr(getattr(ctx, "job", None), "metadata", None))
+    bad_agent = None
+    try:
+        agent_id = profiles.normalize(requested)
+    except profiles.UnknownAgent:
+        bad_agent, agent_id = requested, profiles.default_agent_id()
+    cfg, prompt, manifest = load_config(call_id, agent_id)
     logger = CallLogger(call_id)
-    logger.event("call_start", release=manifest["version"], release_hash=manifest["hash"])
-    core = AvaCore(call_id, HttpTransport(), logger=logger)
+    logger.event("call_start", agent_id=agent_id, release=manifest["version"], release_hash=manifest["hash"])
+    if bad_agent is not None:   # never silent: an unknown id means a wrong token or a stale page
+        logger.event("unknown_agent_id", level="warn", requested=str(bad_agent)[:40], served=agent_id)
     llms = build_llms(cfg)
+    if profiles.get(agent_id)["kind"] == "receptionist":
+        from ava.voice.receptionist_agent import build_receptionist   # lazy: this module is imported by it
+        core, agent = build_receptionist(call_id, cfg, prompt, llms, manifest, ctx, logger,
+                                         ehr_override=profiles.metadata_field(getattr(getattr(ctx, "job", None), "metadata", None), "ehr_mode"))
+        logger = core.log        # free text is redacted before it is written
+    else:
+        core = AvaCore(call_id, HttpTransport(), logger=logger)
+        agent = None
     for _tier, _adapter in llms.items():   # a model that errors is skipped silently by the adapter, so log it
         _adapter.on("llm_availability_changed", lambda ev, _t=_tier: logger.event(
             "llm_unavailable" if not ev.available else "llm_recovered", level="warn" if not ev.available else "info",
             tier=_t, model=getattr(ev.llm, "model", "?")))
     session = build_session(cfg)
-    agent = AvaAgent(core, prompt, llms, cfg, manifest, ctx)
+    agent = agent or AvaAgent(core, prompt, llms, cfg, manifest, ctx)
 
     async def _call_end(reason: str = ""):  # LiveKit awaits shutdown callbacks, so this must be async
+        if hasattr(core, "refresh_pending"):     # receptionist: one last read-only look at unconfirmed changes
+            try:
+                still = await core.refresh_pending(window_s=2.0)
+                logger.event("pending_at_call_end", level="warn" if still else "info", count=still)
+            except Exception as e:
+                logger.event("refresh_failed", level="error", error=type(e).__name__)
         logger.event("call_end", turns=core.state.turn_count, booked=len(core.state.booked()),
                      reason=agent.end_reason or reason or "unknown")
 
@@ -370,7 +410,7 @@ async def entrypoint(ctx: JobContext):
         agent._part = agent._part + 1 if agent._part_turn == core.state.turn_count else 1
         agent._part_turn = core.state.turn_count
         um, am = getattr(agent, "_user_metrics", {}), dict(getattr(item, "metrics", None) or {})
-        for v in violations(core.state, text):
+        for v in agent.violations_fn(core.state, text):
             logger.event("false_booking_claim", level="error", detail=v, text=text[:200])
         # LiveKit's own end-to-end latency: caller stops speaking -> agent audio starts.
         # (This event fires AFTER the reply finishes playing, so wall-clock here would include speaking time.)
@@ -426,7 +466,7 @@ async def entrypoint(ctx: JobContext):
                 agent.end_reason = "silence_" + act
                 logger.event("silence_close", action=act, level="warn" if act == "handoff" else "info")
                 try:
-                    await session.say(GOODBYE_LINE[lang], allow_interruptions=False)
+                    await session.say(line(cfg, "goodbye", GOODBYE_LINE, lang), allow_interruptions=False)
                 finally:
                     await ctx.api.room.delete_room(api.DeleteRoomRequest(room=ctx.room.name))
                 return
@@ -447,7 +487,7 @@ async def entrypoint(ctx: JobContext):
     bg = BackgroundAudioPlayer(thinking_sound=[AudioConfig(BuiltinAudioClip.KEYBOARD_TYPING, volume=0.5)])
     await bg.start(room=ctx.room, agent_session=session)
     core.mark_greeted()
-    await session.say(GREETING[core.state.language], allow_interruptions=True)
+    await session.say(line(cfg, "greeting", GREETING, core.state.language), allow_interruptions=True)
 
 
 if __name__ == "__main__":

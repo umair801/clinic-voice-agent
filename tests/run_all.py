@@ -9,6 +9,12 @@ STEPS = [
     ("voice adapter (needs livekit)", "from tests.voice_adapter import main; main()"),
     ("railway log import", "from tests.log_import import main; main()"),
     ("web test line guard", "from tests.web_call import main; main()"),
+    ("ehr adapter (mock and athena transport)", "from tests.ehr_adapter import main; main()"),
+    ("preview access (private draft agent)", "from tests.preview_access import main; main()"),
+    ("receptionist evals", "from evals.receptionist import main; raise SystemExit(0 if main(write=False) else 1)"),
+    ("receptionist voice (needs livekit)", "from tests.receptionist_voice import main; main()"),
+    ("hipaa layer", "from tests.hipaa_layer import main; main()"),
+    ("agent profiles", "from tests.profiles import main; main()"),
     ("callback reference", "from tests.callback_ref import main; main()"),
     ("thinking field per model", "from tests.thinking_arg import main; main()"),
 ]

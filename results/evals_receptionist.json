@@ -1,0 +1,127 @@
+{
+  "label": "receptionist orchestration evals, mock EHR, stub model",
+  "passed": 24,
+  "total": 24,
+  "results": [
+    {
+      "name": "verified_caller_reaches_help_step",
+      "passed": true,
+      "detail": "status verified, step help"
+    },
+    {
+      "name": "wrong_details_same_message_then_lockout",
+      "passed": true,
+      "detail": "same message True, no field named True, locked after 3 locked, refused after lock locked"
+    },
+    {
+      "name": "two_matches_need_zip",
+      "passed": true,
+      "detail": "need_more then verified"
+    },
+    {
+      "name": "unverified_caller_gets_nothing",
+      "passed": true,
+      "detail": "all refused True, no write reached the EHR True"
+    },
+    {
+      "name": "third_party_gets_general_info_and_messages_only",
+      "passed": true,
+      "detail": "phi refused True, info given, message saved True, step third_party"
+    },
+    {
+      "name": "book_confirmed_by_read",
+      "passed": true,
+      "detail": "status booked, record booked for P1"
+    },
+    {
+      "name": "slot_not_offered_is_refused",
+      "passed": true,
+      "detail": "not_done, writes 0"
+    },
+    {
+      "name": "slow_write_is_pending_never_booked_then_reconciles_with_one_write",
+      "passed": true,
+      "detail": "first pending, false claim replaced True, end blocked True, later 1 booked, writes 1"
+    },
+    {
+      "name": "repeated_book_request_does_not_double_book",
+      "passed": true,
+      "detail": "writes 1, ops 1"
+    },
+    {
+      "name": "one_change_per_caller_turn",
+      "passed": true,
+      "detail": "booked, not_done, then booked"
+    },
+    {
+      "name": "cannot_cancel_someone_elses_visit",
+      "passed": true,
+      "detail": "not_done, record still booked"
+    },
+    {
+      "name": "cancel_confirmed_and_claim_allowed_only_after",
+      "passed": true,
+      "detail": "cancel cancelled, early claim replaced True, late claim allowed True"
+    },
+    {
+      "name": "reschedule_books_new_then_cancels_old",
+      "passed": true,
+      "detail": "booked, old cancelled, new booked"
+    },
+    {
+      "name": "reschedule_into_taken_slot_keeps_old_visit",
+      "passed": true,
+      "detail": "slot_taken, old visit booked"
+    },
+    {
+      "name": "reschedule_old_cancel_unconfirmed_is_told_honestly",
+      "passed": true,
+      "detail": "status pending, new visit booked, old cancellation still being confirmed"
+    },
+    {
+      "name": "urgent_words_stop_scheduling",
+      "passed": true,
+      "detail": "step urgent, routine request not flagged True"
+    },
+    {
+      "name": "end_call_needs_goodbye_and_no_pending_work",
+      "passed": true,
+      "detail": "no goodbye False, goodbye True, goodbye over pending change False"
+    },
+    {
+      "name": "transfer_only_when_asked_or_failing",
+      "passed": true,
+      "detail": "unasked False, asked True"
+    },
+    {
+      "name": "message_text_stays_out_of_call_logs_and_audit",
+      "passed": true,
+      "detail": "saved True, text in message store only True"
+    },
+    {
+      "name": "call_logs_redact_free_text",
+      "passed": true,
+      "detail": "leaked: []"
+    },
+    {
+      "name": "audit_chain_valid_and_holds_no_personal_details",
+      "passed": true,
+      "detail": "chain valid True, entries 4, leaked []"
+    },
+    {
+      "name": "details_not_spoken_to_unverified_caller",
+      "passed": true,
+      "detail": "unverified blocked True, verified allowed True"
+    },
+    {
+      "name": "language_does_not_flip_on_a_single_word",
+      "passed": true,
+      "detail": "after S\u00ed en, after request es, back en"
+    },
+    {
+      "name": "fallback_model_gets_the_same_step_from_state_alone",
+      "passed": true,
+      "detail": "a second core built on the same state resumes at the same step"
+    }
+  ]
+}

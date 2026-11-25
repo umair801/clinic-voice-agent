@@ -8,6 +8,9 @@ All commands run from the repo root. Config and prompts exist only in git. Nothi
 - `releases/POINTER.json` says which version is stable and which (if any) is canary.
 - The worker picks a version per call: `AGENT_RELEASE=current` follows the pointer; a version number pins it.
 
+## More than one agent
+Every release command takes `--agent <id>` (default: the agent named in `agents/registry.json`, today the clinic front desk). Other agents keep their config, prompt and releases in `agents/<id>/`, with their own pointer, so rolling back one agent never touches another. Example: `python -c "from ava.release import cli; cli(['rollback','--agent','medical'])"`. `AGENT_RELEASE` pins a version of the default agent only.
+
 ## Ship a change
 1. Edit `config/agent.json` and/or `prompts/system.md`. Bump `version`.
 2. `python -c "from tests.run_all import main; main()"`
@@ -56,3 +59,11 @@ Error events (tool errors, pending bookings, false booking claims) post to `ALER
 - Variables and watch paths are set in the Railway dashboard and are not versioned in git. Config and prompts are.
 - Eval gate tests the rails with a stub model. It does not test model wording or voice latency.
 - The release gate runs evals in the machine that publishes. Wire it into CI before a team uses this.
+
+## Receptionist agent (draft)
+- Release: `python -c "from ava.release import cli; cli(['publish','--agent','receptionist'])"` runs ITS evals (evals/receptionist.py) first. Rollback and canary take the same `--agent` flag.
+- Settings (Railway variables, never in the repo): ATHENA_CLIENT_ID, ATHENA_CLIENT_SECRET, ATHENA_TOKEN_URL, ATHENA_BASE_URL, AUDIT_SALT (any long random text; keeps audit references stable).
+- `ehr.mode` in agents/receptionist/agent.json: `simulated` (default, public demo: in-memory test records, must be labeled SIMULATED) or `athena_sandbox` (real HTTP to the preview sandbox, slow writes). A private call can override it (below).
+- Private calls: set PREVIEW_KEY on the backend. POST /api/web_call with header `x-preview-key` may call a draft agent and may send `{"ehr_mode": "athena_sandbox"}`. Without the key a draft agent answers 404 like an unknown one, and `ehr_mode` is refused (403).
+- Old messages: `purge(directory, days, apply=False)` lists files older than `compliance.retention_days`; pass `apply=True` to delete. The worker only lists them (warning event `retention_due`).
+- Going public: change `status` to `live` in agents/registry.json only after the page and the measured test calls exist.

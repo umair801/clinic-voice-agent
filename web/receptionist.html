@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HIPAA-Minded Medical Receptionist: Verified Callers, Honest Bookings</title>
+<meta name="description" content="A medical practice phone receptionist that verifies who is calling before sharing anything, and says booked only when the record confirms it. Test calls with synthetic patients.">
+<style>
+:root{--paper:#f9fafb;--card:#fff;--ink:#1f2937;--mut:#6b7280;--line:#e5e7eb;--acc:#4f46e5;--ok:#047857;--bad:#b91c1c;--okbg:#d1fae5;--badbg:#fee2e2;--r:8px;--grad:linear-gradient(135deg,#667eea 0%,#764ba2 100%)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.6 'Segoe UI',Tahoma,Verdana,sans-serif}
+h1,h2,h3{line-height:1.15;margin:0;letter-spacing:-.01em}
+a{color:var(--acc)}
+:focus-visible{outline:3px solid #1f8fff;outline-offset:2px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+.nav{background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+.nav .wrap{display:flex;justify-content:space-between;padding:14px 20px}
+.nav a{margin-left:18px;color:var(--ink);text-decoration:none;font-weight:500}
+.band{background:var(--grad);color:#fff;padding:36px 0}
+.band h1{font-size:clamp(1.9rem,3.6vw,2.8rem)}
+.band p{max-width:40em}
+.band .small{color:rgba(255,255,255,.9)}
+.btn{font:600 1rem 'Segoe UI',Tahoma,Verdana,sans-serif;border:0;border-radius:var(--r);padding:12px 22px;cursor:pointer;background:#fff;color:var(--acc);text-decoration:none;display:inline-block}
+.btn.stop{background:var(--bad);color:#fff}.btn[disabled]{opacity:.55;cursor:default}
+.small{font-size:.88rem;color:var(--mut)}
+section{padding:30px 0}
+section h2{font-size:1.6rem;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line)}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-size:.93rem;vertical-align:top}
+th{background:#f3f4f6}
+.proof{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
+.proof div{padding:18px;border-right:1px solid var(--line)}.proof div:last-child{border:0}
+.proof b{display:block;font-size:1.8rem}
+.tag{display:inline-block;font-size:.78rem;font-weight:600;border-radius:99px;padding:1px 9px;margin-top:6px}
+.tag.off{background:#ede9fe;color:#5b21b6}.tag.sim{background:#e0e7ff;color:#3730a3}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.card ul{margin:6px 0 0;padding-left:20px}.card li{margin:4px 0}
+.nope{border:1.5px solid var(--bad);background:#fff;border-radius:var(--r);padding:18px 20px}
+.nope ul{columns:2;column-gap:32px;padding-left:20px}.nope li{margin:5px 0;break-inside:avoid}
+.banner{background:#fef3c7;color:#92400e;border-radius:var(--r);padding:8px 14px;display:inline-block;font-weight:600;font-size:.9rem}
+footer{padding:26px 0 56px;color:var(--mut);font-size:.9rem;border-top:1px solid var(--line)}
+@media(max-width:800px){.two,.proof{grid-template-columns:1fr}.proof div{border-right:0;border-bottom:1px solid var(--line)}.nope ul{columns:1}}
+</style></head><body>
+<header class="nav"><div class="wrap"><b>M Umair</b><nav><a href="/agents">All agents</a><a href="https://github.com/umair801/clinic-voice-agent">GitHub</a><a href="https://www.upwork.com/freelancers/umair801">Upwork</a></nav></div></header>
+<div class="band"><div class="wrap">
+ <h1>A medical receptionist that checks who is calling before it shares anything</h1>
+ <p>Practices lose patients to hold queues and risk privacy mistakes when staff answer in a hurry. This receptionist verifies the caller first, books, cancels and moves visits, and says "booked" only after the record confirms it.</p>
+ <p class="small">Built for community health centers and specialty practices. Records on this page are <b>simulated</b> and every patient is synthetic.</p>
+ <p><span class="banner">Demo practice. Simulated records. Synthetic patients only.</span></p>
+ <p><span id="wc"><button class="btn" id="wcbtn" disabled>Start test call</button></span></p>
+ <p id="wcstat" class="small" role="status">Checking the test line...</p>
+ <p class="small">The browser call needs no phone. Riley is an AI voice agent. Use headphones, allow the microphone, and use only the synthetic names below. Calls end after a few minutes and are logged for testing without what was said.</p>
+</div></div>
+<div class="wrap">
+<section>
+ <div class="proof">
+  <div><b id="p1">25 of 25</b><span>offline safeguard scenarios pass</span><br><i class="tag off">Offline eval</i></div>
+  <div><b>0</b><span>real patients or real records</span><br><i class="tag sim">Synthetic data</i></div>
+  <div><b>Not yet</b><span>measured latency and cost for this agent. Test calls are still to be run.</span><br><i class="tag sim">Pending</i></div>
+ </div>
+ <p class="small" style="margin-top:8px">Test-call results will be added here only after real measured calls. <a href="https://github.com/umair801/clinic-voice-agent">Evals and runbook on GitHub</a>.</p>
+</section>
+<section>
+ <h2>Try it with a synthetic patient</h2>
+ <p style="max-width:44em">Riley asks for a full name and date of birth first. If two records match, it asks for a ZIP code. Three wrong tries lock the call to a message.</p>
+ <table style="max-width:640px"><thead><tr><th>Name</th><th>Date of birth</th><th>Note</th></tr></thead><tbody>
+  <tr><td>Gary Testone</td><td>April 18, 1948</td><td>adult patient</td></tr>
+  <tr><td>Dorrie Testtwo</td><td>November 23, 1949</td><td>adult patient</td></tr>
+  <tr><td>Jovin Testthree</td><td>January 1, 1990</td><td>two records share this name and birth date: ZIP 02103 or 90210</td></tr>
+ </tbody></table>
+ <p class="small">Try also: calling for someone else, giving a wrong date of birth, or saying you have chest pain.</p>
+</section>
+<section>
+ <div class="two">
+  <div class="card"><h3>Safeguards that are built</h3>
+   <ul><li>Verification first: name and date of birth, ZIP when two records match.</li>
+   <li>A caller who is not the patient gets no patient details.</li>
+   <li>One change per caller turn. Only offered slots or the caller's own visits.</li>
+   <li>Urgent words route to 911 or 988 guidance, not booking.</li>
+   <li>A write that times out is pending, then checked by reading the record. It is never resent on a guess.</li>
+   <li>An output guard blocks "booked", "cancelled" or "moved" unless confirmed, and blocks details to unverified callers.</li>
+   <li>Call logs are redacted. The audit log is hash-chained and uses pseudonyms.</li>
+   <li>Config and prompts are versioned releases with an eval gate and rollback.</li></ul>
+  </div>
+  <div class="card"><h3>Where the records come from</h3>
+   <ul><li>This page uses a simulated practice so answers stay fast.</li>
+   <li>A real adapter for the athenahealth sandbox is built and tested. Sandbox writes were measured at 60 to 150 seconds or more, so proof calls with it are run separately.</li>
+   <li>Reads are retried. Writes are never retried blindly.</li></ul>
+  </div>
+ </div>
+</section>
+<section>
+ <div class="nope"><h2>What we do not claim</h2>
+ <ul>
+  <li>No HIPAA compliance or certification claim. The design follows HIPAA-minded habits only.</li>
+  <li>No real patients and no production calls. Every record is synthetic.</li>
+  <li>Business associate agreements with every vendor are not in place.</li>
+  <li>Encryption at rest, intake forms and text messages are not built.</li>
+  <li>Live latency and cost for this agent are not measured yet.</li>
+  <li>Sandbox cancel and reschedule behavior is only partly tested.</li>
+ </ul></div>
+</section>
+<footer>Datawebify. Built by Muhammad Umair. <a href="https://github.com/umair801/clinic-voice-agent">GitHub</a> and <a href="https://www.upwork.com/freelancers/umair801">Upwork profile</a>.</footer>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.15.0/dist/livekit-client.umd.min.js"></script>
+<script>
+(function(){
+ const AGENT="receptionist";
+ const hm=(location.hash.match(/key=([^&]+)/)||[])[1];
+ const KEY=hm?decodeURIComponent(hm):"";
+ const btn=document.getElementById("wcbtn"),st=document.getElementById("wcstat");
+ let room=null,roomName=null,live=false,timer=null;
+ const say=t=>{st.textContent=t};
+ const hdr=()=>{const h={"content-type":"application/json"};if(KEY)h["x-preview-key"]=KEY;return h};
+ fetch("/api/results/evals_receptionist").then(r=>r.json()).then(e=>{if(e&&e.total)document.getElementById("p1").textContent=e.passed+" of "+e.total}).catch(()=>{});
+ fetch("/api/web_call/status").then(r=>r.json()).then(j=>{
+  if(j.enabled&&window.LivekitClient){btn.disabled=false;say(KEY?"Private preview. Ready.":"Ready.")}
+  else say("The browser test line is off right now.");
+ }).catch(()=>say("The browser test line is off right now."));
+ async function end(){
+  live=false;clearInterval(timer);
+  const n=roomName;roomName=null;
+  try{if(room)await room.disconnect()}catch(e){}
+  room=null;document.querySelectorAll("audio[data-ava]").forEach(a=>a.remove());
+  if(n){try{await fetch("/api/web_call/end",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({room:n})})}catch(e){}}
+  btn.textContent="Start test call";btn.classList.remove("stop");btn.disabled=false;
+ }
+ btn.addEventListener("click",async()=>{
+  if(live){say("Call ended.");return end()}
+  btn.disabled=true;say("Connecting...");
+  try{
+   const r=await fetch("/api/web_call",{method:"POST",headers:hdr(),body:JSON.stringify({agent_id:AGENT})});
+   if(!r.ok){let m="This agent is not open to the public yet.";if(r.status!==404){try{m=(await r.json()).detail||"Could not start the call."}catch(e){m="Could not start the call."}}say(m);btn.disabled=false;return}
+   const j=await r.json();roomName=j.room;
+   const L=window.LivekitClient;room=new L.Room();
+   room.on(L.RoomEvent.TrackSubscribed,t=>{if(t.kind==="audio"){const el=t.attach();el.setAttribute("data-ava","1");document.body.appendChild(el)}});
+   room.on(L.RoomEvent.Disconnected,()=>{if(live){say("Call ended.");end()}});
+   await room.connect(j.url,j.token);
+   await room.localParticipant.setMicrophoneEnabled(true);
+   live=true;btn.disabled=false;btn.textContent="End call";btn.classList.add("stop");
+   let left=j.max_seconds;say("Connected. Riley will greet you. ("+left+"s left)");
+   timer=setInterval(()=>{left-=1;if(left<=0){say("Call time limit reached.");end()}else if(live){say("In call. "+left+"s left")}},1000);
+  }catch(e){
+   say(e&&e.name==="NotAllowedError"?"Microphone permission was blocked. Allow it and try again.":"Could not connect. Please try again.");
+   await end();
+  }
+ });
+ window.addEventListener("pagehide",()=>{if(roomName)navigator.sendBeacon("/api/web_call/end",new Blob([JSON.stringify({room:roomName})],{type:"application/json"}))});
+})();
+</script>
+</body></html>

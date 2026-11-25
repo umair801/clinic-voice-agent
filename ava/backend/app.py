@@ -110,7 +110,7 @@ def create_app(store=None, fault=None):
 
     @app.get("/api/results/{name}")
     def public_results(name: str):
-        if name not in ("evals", "baseline", "cost_model", "live_calls"):
+        if name not in ("evals", "baseline", "cost_model", "live_calls", "evals_receptionist"):
             raise HTTPException(404, "not found")
         path = os.path.join(results, f"{name}.json")
         if not os.path.exists(path):
@@ -131,8 +131,36 @@ def create_app(store=None, fault=None):
     def web_status():
         return {"enabled": gate.enabled, "max_seconds": gate.max_seconds}
 
+    @app.get("/api/agents")
+    def agents_list():
+        """Live agents for the hub page. Titles only: no prompts, no config, no keys."""
+        from ava import profiles
+        return {"agents": profiles.list_agents(public=True)}
+
     @app.post("/api/web_call")
     async def web_call(request: Request):
+        from ava import profiles
+        try:   # the body is optional: the original page posts none and gets the default agent
+            body = await request.json()
+        except Exception:
+            body = {}
+        wanted = body.get("agent_id") if isinstance(body, dict) else None
+        try:   # validated before the spend guard so a bad id never uses up a call slot
+            agent_id = profiles.normalize(wanted)
+        except profiles.UnknownAgent:
+            raise HTTPException(404, "Unknown agent.")
+        import hmac
+        want_key = os.getenv("PREVIEW_KEY", "")
+        got_key = request.headers.get("x-preview-key", "")
+        preview_ok = bool(want_key) and hmac.compare_digest(got_key.encode(), want_key.encode())
+        if profiles.get(agent_id)["status"] != "live" and not preview_ok:
+            raise HTTPException(404, "Unknown agent.")      # a draft agent looks exactly like one that does not exist
+        ehr_mode = body.get("ehr_mode") if isinstance(body, dict) else None
+        if ehr_mode is not None:
+            if not preview_ok:
+                raise HTTPException(403, "Not allowed.")
+            if ehr_mode not in ("simulated", "athena_sandbox"):
+                raise HTTPException(400, "Unknown ehr_mode.")
         fwd = request.headers.get("x-forwarded-for", "")
         ip = fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "unknown")
         ok, why = gate.check(ip)
@@ -156,7 +184,8 @@ def create_app(store=None, fault=None):
         task = asyncio.create_task(_hard_stop())
         app.state.web_tasks.add(task)
         task.add_done_callback(app.state.web_tasks.discard)
-        return {"url": url, "token": make_token(room, key, secret, gate.max_seconds), "room": room,
+        return {"url": url, "token": make_token(room, key, secret, gate.max_seconds, agent_id, ehr_mode), "room": room,
+                "agent_id": agent_id,
                 "max_seconds": gate.max_seconds}
 
     async def _delete_room(room):
@@ -182,6 +211,14 @@ def create_app(store=None, fault=None):
     @app.get("/")
     def home():
         return FileResponse(os.path.join(web, "index.html"))
+
+    @app.get("/receptionist")
+    def receptionist_page():
+        return FileResponse(os.path.join(web, "receptionist.html"))
+
+    @app.get("/agents")
+    def hub_page():
+        return FileResponse(os.path.join(web, "hub.html"))
 
     return app
 

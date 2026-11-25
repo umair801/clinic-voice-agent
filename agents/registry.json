@@ -12,7 +12,7 @@
     "receptionist": {
       "title": "HIPAA Medical Practice Receptionist",
       "kind": "receptionist",
-      "status": "draft",
+      "status": "live",
       "config": "agents/receptionist/agent.json",
       "releases": "agents/receptionist/releases",
       "evals": "evals.receptionist"

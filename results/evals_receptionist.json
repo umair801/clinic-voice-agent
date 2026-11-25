@@ -1,7 +1,7 @@
 {
   "label": "receptionist orchestration evals, mock EHR, stub model",
-  "passed": 25,
-  "total": 25,
+  "passed": 26,
+  "total": 26,
   "results": [
     {
       "name": "verified_caller_reaches_help_step",
@@ -127,6 +127,11 @@
       "name": "simulated_demo_practice_supports_the_full_flow",
       "passed": true,
       "detail": "seeded visit found True, reschedule booked, now holds the new time True"
+    },
+    {
+      "name": "early_goodbye_never_repeats_the_question",
+      "passed": true,
+      "detail": "first 'Is there anything else I can help you with? ', second 'Is there anything else I can help you with? '"
     }
   ]
 }

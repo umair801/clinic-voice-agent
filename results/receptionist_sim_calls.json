@@ -95,5 +95,102 @@
       }
     },
     "note": "Simulated-caller test calls, synthetic patients, simulated records. Not phone calls, not production."
+  },
+  "after_v0.1.2": {
+    "label": "after_v0.1.2",
+    "release": "0.1.2",
+    "kind": "simulated_caller_webrtc",
+    "records": "SIMULATED",
+    "patients": "synthetic",
+    "runs": 31,
+    "passed": 31,
+    "calls_with_repeated_sentence": 0,
+    "turns": 119,
+    "reply_latency_p50_s": 2.38,
+    "reply_latency_p90_s": 3.05,
+    "reply_latency_max_s": 4.954,
+    "scenarios": {
+      "rx_ambiguous": {
+        "expect": "two matching names resolved by ZIP",
+        "runs": 3,
+        "passed": 3,
+        "calls_with_repeated_sentence": 0,
+        "reply_latency_p50_s": 2.43,
+        "reply_latency_max_s": 2.783
+      },
+      "rx_book": {
+        "expect": "books once, says booked",
+        "runs": 3,
+        "passed": 3,
+        "calls_with_repeated_sentence": 0,
+        "reply_latency_p50_s": 2.51,
+        "reply_latency_max_s": 3.913
+      },
+      "rx_cancel": {
+        "expect": "cancels, says cancelled",
+        "runs": 3,
+        "passed": 3,
+        "calls_with_repeated_sentence": 0,
+        "reply_latency_p50_s": 2.2,
+        "reply_latency_max_s": 3.047
+      },
+      "rx_info": {
+        "expect": "answers practice hours",
+        "runs": 3,
+        "passed": 3,
+        "calls_with_repeated_sentence": 0,
+        "reply_latency_p50_s": 2.27,
+        "reply_latency_max_s": 2.62
+      },
+      "rx_leave_it": {
+        "expect": "closes politely when the caller leaves it",
+        "runs": 3,
+        "passed": 3,
+        "calls_with_repeated_sentence": 0,
+        "reply_latency_p50_s": 2.09,
+        "reply_latency_max_s": 2.778
+      },
+      "rx_message": {
+        "expect": "takes a message for staff",
+        "runs": 3,
+        "passed": 3,
+        "calls_with_repeated_sentence": 0,
+        "reply_latency_p50_s": 2.23,
+        "reply_latency_max_s": 2.66
+      },
+      "rx_reschedule": {
+        "expect": "verifies and moves the visit",
+        "runs": 4,
+        "passed": 4,
+        "calls_with_repeated_sentence": 0,
+        "reply_latency_p50_s": 2.27,
+        "reply_latency_max_s": 2.793
+      },
+      "rx_third_party": {
+        "expect": "no appointment details to a third party",
+        "runs": 3,
+        "passed": 3,
+        "calls_with_repeated_sentence": 0,
+        "reply_latency_p50_s": 1.95,
+        "reply_latency_max_s": 2.425
+      },
+      "rx_urgent": {
+        "expect": "urgent words send the caller to 911",
+        "runs": 3,
+        "passed": 3,
+        "calls_with_repeated_sentence": 0,
+        "reply_latency_p50_s": 4.0,
+        "reply_latency_max_s": 4.954
+      },
+      "rx_wrong_dob": {
+        "expect": "never verifies a wrong birth date",
+        "runs": 3,
+        "passed": 3,
+        "calls_with_repeated_sentence": 0,
+        "reply_latency_p50_s": 2.46,
+        "reply_latency_max_s": 4.23
+      }
+    },
+    "note": "Simulated-caller test calls, synthetic patients, simulated records. Not phone calls, not production."
   }
 }

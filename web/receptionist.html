@@ -52,11 +52,11 @@ footer{padding:26px 0 56px;color:var(--mut);font-size:.9rem;border-top:1px solid
 <div class="wrap">
 <section>
  <div class="proof">
-  <div><b id="p1">25 of 25</b><span>offline safeguard scenarios pass</span><br><i class="tag off">Offline eval</i></div>
-  <div><b>0</b><span>real patients or real records</span><br><i class="tag sim">Synthetic data</i></div>
-  <div><b>Not yet</b><span>measured latency and cost for this agent. Test calls are still to be run.</span><br><i class="tag sim">Pending</i></div>
+  <div><b id="p1">26 of 26</b><span>offline safeguard scenarios pass</span><br><i class="tag off">Offline eval</i></div>
+  <div><b>31 of 31</b><span>simulated test calls pass on the final version (24 of 30 before two fixes). No false "booked", no details to a third party.</span><br><i class="tag sim">Simulated caller, simulated records</i></div>
+  <div><b>2.4s</b><span>median reply, 3.1s at p90, 119 turns. The 2.0s target is not met. Model cost $0.0011 per call minute.</span><br><i class="tag sim">Simulated caller</i></div>
  </div>
- <p class="small" style="margin-top:8px">Test-call results will be added here only after real measured calls. <a href="https://github.com/umair801/clinic-voice-agent">Evals and runbook on GitHub</a>.</p>
+ <p class="small" style="margin-top:8px">Test-call results with synthetic patients and simulated records, not production calls. Calls ran over the web, not the phone network, and cost covers the language model only. <a href="https://github.com/umair801/clinic-voice-agent">Evals, results and runbook on GitHub</a>.</p>
 </section>
 <section>
  <h2>Try it with a synthetic patient</h2>
@@ -94,8 +94,8 @@ footer{padding:26px 0 56px;color:var(--mut);font-size:.9rem;border-top:1px solid
   <li>No real patients and no production calls. Every record is synthetic.</li>
   <li>Business associate agreements with every vendor are not in place.</li>
   <li>Encryption at rest, intake forms and text messages are not built.</li>
-  <li>Live latency and cost for this agent are not measured yet.</li>
-  <li>Sandbox cancel and reschedule behavior is only partly tested.</li>
+  <li>Voice, speech-to-text and LiveKit costs are not measured. Real phone calls and live human transfer are not tested.</li><li>Urgent-words replies are the slowest (about 4 seconds) and need a faster path.</li>
+  <li>Sandbox cancel and reschedule behavior is only partly tested. Test names are boosted in speech recognition for this demo only.</li>
  </ul></div>
 </section>
 <footer>Datawebify. Built by Muhammad Umair. <a href="https://github.com/umair801/clinic-voice-agent">GitHub</a> and <a href="https://www.upwork.com/freelancers/umair801">Upwork profile</a>.</footer>

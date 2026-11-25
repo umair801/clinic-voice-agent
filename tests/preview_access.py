@@ -22,7 +22,15 @@ def main():
     os.environ.update({"WEB_CALL_ENABLED": "1", "WEB_CALL_MAX_CONCURRENT": "20", "WEB_CALL_PER_IP_PER_HOUR": "50", "WEB_CALL_DAILY_CAP": "99",
                        "LIVEKIT_URL": "wss://example.invalid", "LIVEKIT_API_KEY": "devkey", "LIVEKIT_API_SECRET": "s" * 40,
                        "PREVIEW_KEY": "k" * 24})
-    check("receptionist is a draft in the registry", profiles.get("receptionist")["status"] == "draft")
+    real_status = profiles.get("receptionist")["status"]       # what the repo says today (live once published for the public)
+    _orig = profiles._load
+
+    def _as_draft(root=None):                                   # the draft rules below are tested against a draft copy of the registry
+        reg = _orig(root)
+        reg["agents"]["receptionist"]["status"] = "draft"
+        return reg
+    profiles._load = _as_draft
+    check("receptionist is a draft in the (test) registry", profiles.get("receptionist")["status"] == "draft")
     c = TestClient(create_app(store=SQLiteStore(":memory:")))
     h = {"x-forwarded-for": "7.7.7.7"}
 
@@ -52,6 +60,9 @@ def main():
           c2.post("/api/web_call", json={"agent_id": "receptionist"}, headers={**h, "x-preview-key": ""}).status_code == 404)
     check("metadata field reader", profiles.metadata_field('{"ehr_mode": "simulated"}', "ehr_mode") == "simulated"
           and profiles.metadata_field("nope", "ehr_mode") is None and profiles.metadata_field('{"ehr_mode": 5}', "ehr_mode") is None)
+    profiles._load = _orig
+    check("repo registry: receptionist is public, no key needed (live)", real_status == "live"
+          and c2.post("/api/web_call", json={"agent_id": "receptionist"}, headers={**h, "x-forwarded-for": "8.8.8.8"}).status_code == 200)
     print("preview access OK")
 
 

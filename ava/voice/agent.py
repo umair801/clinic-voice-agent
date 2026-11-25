@@ -308,7 +308,8 @@ def build_session(cfg):
     t = cfg["turn"]
     from livekit.plugins.turn_detector.multilingual import MultilingualModel
     return AgentSession(
-        stt=deepgram.STT(api_key=os.getenv("DEEPGRAM_API_KEY", ""), model=cfg["stt"]["model"], language=cfg["stt"]["language"]),
+        stt=deepgram.STT(api_key=os.getenv("DEEPGRAM_API_KEY", ""), model=cfg["stt"]["model"], language=cfg["stt"]["language"],
+                           **({"keyterms": list(cfg["stt"]["keyterms"])} if cfg["stt"].get("keyterms") else {})),
         tts=elevenlabs.TTS(api_key=os.getenv("ELEVENLABS_API_KEY", ""), voice_id=os.getenv("ELEVENLABS_VOICE_ID_EN", ""), model=cfg["tts"]["model"], language="en"),
         vad=silero.VAD.load(),
         turn_handling={

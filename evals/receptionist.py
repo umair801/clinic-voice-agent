@@ -326,6 +326,17 @@ async def s_simulated_demo_practice_supports_the_full_flow():
     return ok, f"seeded visit found {has_one}, reschedule {r['status']}, now holds the new time {ok}"
 
 
+async def s_early_goodbye_never_repeats_the_question():
+    """Found in simulated test calls: a model reply "Is there anything else I can help you with? Goodbye." became the question twice."""
+    core, *_ = make()
+    await verified(core)
+    out = guard_out(core.state, "Is there anything else I can help you with? Thank you, goodbye.")
+    out2 = guard_out(core.state, "Thank you, goodbye. Take care, goodbye.")
+    q = "anything else i can help"
+    ok = out.lower().count(q) == 1 and out2.lower().count(q) == 1 and "goodbye" not in (out + out2).lower()
+    return ok, f"first {out!r}, second {out2!r}"
+
+
 SCENARIOS = [(n[2:], f) for n, f in list(globals().items()) if n.startswith("s_") and callable(f)]
 
 

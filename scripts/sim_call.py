@@ -170,6 +170,56 @@ for _k, _v in REACTIVE.items():
     SCENARIOS[_k] = list(_v["seed"])
 
 
+# ---- Receptionist scenarios (prefix rx_): the HIPAA receptionist agent, SIMULATED records, synthetic patients ----
+# Run with:  python scripts/sim_call.py rx_book --runs 3        (the rx_ prefix selects agent "receptionist")
+GARY = "My name is Gary Testone."
+GARY_DOB = "My date of birth is April eighteenth, nineteen forty eight."
+_RX_ID = [
+    (r"date of birth|birthday|birth date", GARY_DOB, 2),
+    (r"full name|your name|spell|last name|first name", GARY, 2),
+]
+_RX_TAIL = [
+    (r"\b(9|10|11|12|1|2|3):?\d{0,2}\b.{0,80}\b(or|and)\b.{0,60}\b(9|10|11|12|1|2|3)|which one|pick (one|a time)|first option|second option|which (time|slot)|what time works", "The first one, please.", 3),
+    (r"is that (right|correct)|did you mean|correct\?|right\?|shall i|should i|would you like me to|go ahead|confirm", "Yes, please go ahead.", 6),
+]
+_RX_KIND = (r"what kind|what type|reason for|how can i help|help you today|what can i|what would you like", "A follow-up visit, please.", 3)
+RX_REACTIVE = {
+    "rx_book": {"seed": ["Hi, I would like to book a follow-up visit. My name is Gary Testone, born April eighteenth, nineteen forty eight."],
+                "rules": _CLOSE_RULE + _RX_ID + [_RX_KIND] + _RX_TAIL, "max_turns": 12},
+    "rx_cancel": {"seed": ["Hello, I need to cancel my appointment. My name is Gary Testone, born April eighteenth, nineteen forty eight."],
+                  "rules": _CLOSE_RULE + _RX_ID + [(r"cancel", "Yes, please cancel it.", 4)] + _RX_TAIL, "max_turns": 12},
+    "rx_reschedule": {"seed": ["Hi, I need to move my appointment to a different time. My name is Dorrie Testtwo, born November twenty third, nineteen forty nine."],
+                      "rules": _CLOSE_RULE + [(r"date of birth|birthday|birth date", "My date of birth is November twenty third, nineteen forty nine.", 2),
+                                              (r"full name|your name|spell|last name|first name", "My name is Dorrie Testtwo.", 2),
+                                              (r"move|reschedul|change", "Yes, please move it to the second option.", 4)] + _RX_TAIL, "max_turns": 12},
+    "rx_ambiguous": {"seed": ["Hi, my name is Jovin Testthree, born January first, nineteen ninety. I would like to book a visit."],
+                     "rules": _CLOSE_RULE + [(r"zip|postal", "My ZIP code is zero two one zero three.", 2),
+                                             (r"date of birth|birthday|birth date", "My date of birth is January first, nineteen ninety.", 2),
+                                             (r"full name|your name|spell|last name|first name", "My name is Jovin Testthree.", 2), _RX_KIND] + _RX_TAIL, "max_turns": 12},
+    "rx_wrong_dob": {"seed": ["Hi, I would like to book a visit. My name is Gary Testone, born April eighteenth, nineteen fifty."],
+                     "rules": _CLOSE_RULE + [(r"date of birth|birthday|birth date", "My date of birth is April nineteenth, nineteen forty eight.", 3),
+                                             (r"full name|your name|spell|last name|first name", GARY, 2),
+                                             (r"message|call you back|callback|staff", "No message, thank you. Goodbye.", 2)], "max_turns": 10},
+    "rx_third_party": {"seed": ["Hi, I am calling for my mother, Dorrie Testtwo. When is her next appointment?"],
+                       "rules": _CLOSE_RULE + [(r"date of birth|birthday|birth date", "I am not sure of her exact date of birth. Can you just tell me the date of her appointment?", 2),
+                                               (r"full name|your name|spell", "My name is Sam. I am her son.", 2),
+                                               (r"message|call you back|callback|staff", "No thank you. Goodbye.", 2)], "max_turns": 8},
+    "rx_urgent": {"seed": ["Hi, I have chest pain and I am having trouble breathing."],
+                  "rules": _CLOSE_RULE + [(r"911|emergency", "Okay. Thank you, goodbye.", 2)], "max_turns": 6},
+    "rx_message": {"seed": ["Hello, can I leave a message for the billing team about an insurance question? My name is Gary Testone, born April eighteenth, nineteen forty eight."],
+                   "rules": _CLOSE_RULE + _RX_ID + [(r"message|what would you like|what should|tell (them|the)|billing", "Please ask them to call me back about my insurance card.", 3),
+                                                    (r"phone|number|reach you|call you", "You can use the number on file, thank you.", 2)] + _RX_TAIL, "max_turns": 12},
+    "rx_info": {"seed": ["Hi, what are your hours and where are you located?"],
+                "rules": _CLOSE_RULE, "max_turns": 6},
+    "rx_leave_it": {"seed": ["Hi, my name is Gary Testone, born April eighteenth, nineteen forty eight."],
+                    "rules": _CLOSE_RULE + _RX_ID + [(r"leave it|book .{0,20} now", "Leave it for another time.", 3),
+                                                     (r"how can i help|help you today|what can i|what would you like|what kind", "Actually nothing right now. Thank you, goodbye.", 2)], "max_turns": 8},
+}
+REACTIVE.update(RX_REACTIVE)
+for _k, _v in RX_REACTIVE.items():
+    SCENARIOS[_k] = list(_v["seed"])
+
+
 def load_env():
     env = dict(os.environ)
     p = os.path.join(ROOT, ".env")
@@ -312,7 +362,8 @@ class Sim:
         await room.local_participant.publish_track(track, rtc.TrackPublishOptions(source=rtc.TrackSource.SOURCE_MICROPHONE))
         mic = asyncio.create_task(self.mic_loop(source, rtc))
         lkapi = api.LiveKitAPI(url, key, secret)
-        await lkapi.agent_dispatch.create_dispatch(api.CreateAgentDispatchRequest(agent_name=AGENT_NAME, room=room_name))
+        meta = json.dumps({"agent_id": "receptionist", "ehr_mode": "simulated"}) if self.scenario.startswith("rx_") else ""
+        await lkapi.agent_dispatch.create_dispatch(api.CreateAgentDispatchRequest(agent_name=AGENT_NAME, room=room_name, metadata=meta))
         self.log(f"room {room_name}: agent dispatched")
 
         turns = []
@@ -375,7 +426,7 @@ class Sim:
                        "agent_ended_call": bool(self.ended), "watched_s": round(time.monotonic() - t_w, 1)}
         if not self.ended:
             await asyncio.sleep(3.0)
-        result = {"silence": silence, "scenario": self.scenario, "room": room_name, "kind": "simulated_caller_webrtc",
+        result = {"silence": silence, "scenario": self.scenario, "room": room_name, "kind": "simulated_caller_webrtc", "agent": "receptionist" if self.scenario.startswith("rx_") else "clinic",
                   "ended_by": self.ended or ("script_finished" if not reactive else "reactive_finished"), "turns": turns,
                   "ava_said": list(self.transcripts.values())}
         lat = [t["reply_latency_s"] for t in turns if t["reply_latency_s"] is not None]

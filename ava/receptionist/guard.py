@@ -52,6 +52,9 @@ class ReceptionistGuard(SentenceGuard):
         if GOODBYE_WORDS.search(sentence) and not st.caller_goodbye and not st.urgent:
             if self.on_block:
                 self.on_block(["goodbye before the caller said goodbye"], sentence)
+            if self.asked:                                    # a question was already spoken in this reply: never say it twice
+                return ""
+            self.asked = True
             return ASK_MORE.get(st.language, ASK_MORE["en"]) + (trail or " ")
         v = violations(st, sentence)
         if not v:

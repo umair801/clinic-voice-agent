@@ -83,7 +83,8 @@ footer{padding:26px 0 56px;color:var(--mut);font-size:.9rem;border-top:1px solid
   <div class="card"><h3>Where the records come from</h3>
    <ul><li>This page uses a simulated practice so answers stay fast.</li>
    <li>A real adapter for the athenahealth sandbox is built and tested. Sandbox writes were measured at 60 to 150 seconds or more, so proof calls with it are run separately.</li>
-   <li>Reads are retried. Writes are never retried blindly.</li></ul>
+   <li>Reads are retried. Writes are never retried blindly.</li>
+   <li>One simulated-caller test call ran against the real sandbox: the booking stayed pending, Riley said it was still confirming and never said "booked", and the write landed several minutes later. The test visit was cancelled afterwards.</li></ul>
   </div>
  </div>
 </section>

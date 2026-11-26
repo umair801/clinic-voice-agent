@@ -1,0 +1,22 @@
+{
+  "version": "0.1.3",
+  "kind": "receptionist",
+  "prompt_file": "agents/receptionist/system.md",
+  "models": {"small": "claude-haiku-5-5", "large": "claude-sonnet-5-5"},
+  "llm": {"thinking": "disabled"},
+  "fallback_order": ["small", "large"],
+  "stt": {"provider": "deepgram", "model": "nova-3", "language": "multi", "keyterms": ["Riverside Family Medicine", "Gary Testone", "Dorrie Testtwo", "Jovin Testthree", "Sandboxtest", "Gary Sandboxtest", "Testone", "Testtwo", "Testthree", "Dorrie", "Jovin"]},
+  "tts": {"provider": "elevenlabs", "model": "eleven_turbo_v2_5"},
+  "turn": {"endpointing_min_delay": 0.4, "endpointing_max_delay": 2.0, "interruption_mode": "adaptive",
+           "preemptive_generation": false, "min_interruption_words": 1},
+  "silence": {"reprompt_after_s": 8, "max_reprompts": 2},
+  "lines": {
+    "greeting": {"en": "Thank you for calling Riverside Family Medicine, a demo practice. This is Riley. How can I help you today?",
+                 "es": "Gracias por llamar a Riverside Family Medicine, una clínica de demostración. Soy Riley. ¿En qué le puedo ayudar?"},
+    "goodbye": {"en": "Thank you for calling. Goodbye.", "es": "Gracias por llamar. Adiós."}
+  },
+  "ehr": {"mode": "simulated", "department_id": "1", "appointment_type_id": "8", "horizon_days": 30,
+          "submit_timeout_s": 8.0, "reconcile_window_s": 20.0},
+  "compliance": {"retention_days": 30, "audit_log": "logs/audit/receptionist.jsonl", "messages_dir": "logs/messages"},
+  "rollout": {"canary_percent": 0}
+}

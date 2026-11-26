@@ -186,6 +186,10 @@ _RX_KIND = (r"what kind|what type|reason for|how can i help|help you today|what 
 RX_REACTIVE = {
     "rx_book": {"seed": ["Hi, I would like to book a follow-up visit. My name is Gary Testone, born April eighteenth, nineteen forty eight."],
                 "rules": _CLOSE_RULE + _RX_ID + [_RX_KIND] + _RX_TAIL, "max_turns": 12},
+    # Real athenahealth PREVIEW sandbox patient (synthetic). Run with RX_EHR_MODE=athena_sandbox. Writes are slow there: "still confirming" is expected.
+    "rx_sbx_book": {"seed": ["Hi, I would like to book a follow-up visit. My name is Gary Sandboxtest, born April eighteenth, nineteen forty eight."],
+                    "rules": _CLOSE_RULE + [(r"date of birth|birthday|birth date", GARY_DOB, 2),
+                                            (r"full name|your name|spell|last name|first name", "My name is Gary Sandboxtest.", 2), _RX_KIND] + _RX_TAIL, "max_turns": 12},
     "rx_cancel": {"seed": ["Hello, I need to cancel my appointment. My name is Gary Testone, born April eighteenth, nineteen forty eight."],
                   "rules": _CLOSE_RULE + _RX_ID + [(r"cancel", "Yes, please cancel it.", 4)] + _RX_TAIL, "max_turns": 12},
     "rx_reschedule": {"seed": ["Hi, I need to move my appointment to a different time. My name is Dorrie Testtwo, born November twenty third, nineteen forty nine."],
@@ -362,7 +366,7 @@ class Sim:
         await room.local_participant.publish_track(track, rtc.TrackPublishOptions(source=rtc.TrackSource.SOURCE_MICROPHONE))
         mic = asyncio.create_task(self.mic_loop(source, rtc))
         lkapi = api.LiveKitAPI(url, key, secret)
-        meta = json.dumps({"agent_id": "receptionist", "ehr_mode": "simulated"}) if self.scenario.startswith("rx_") else ""
+        meta = json.dumps({"agent_id": "receptionist", "ehr_mode": os.environ.get("RX_EHR_MODE", "simulated")}) if self.scenario.startswith("rx_") else ""
         await lkapi.agent_dispatch.create_dispatch(api.CreateAgentDispatchRequest(agent_name=AGENT_NAME, room=room_name, metadata=meta))
         self.log(f"room {room_name}: agent dispatched")
 

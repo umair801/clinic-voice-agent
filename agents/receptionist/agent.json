@@ -1,11 +1,11 @@
 {
-  "version": "0.1.2",
+  "version": "0.1.3",
   "kind": "receptionist",
   "prompt_file": "agents/receptionist/system.md",
   "models": {"small": "claude-haiku-5-5", "large": "claude-sonnet-5-5"},
   "llm": {"thinking": "disabled"},
   "fallback_order": ["small", "large"],
-  "stt": {"provider": "deepgram", "model": "nova-3", "language": "multi", "keyterms": ["Riverside Family Medicine", "Gary Testone", "Dorrie Testtwo", "Jovin Testthree", "Testone", "Testtwo", "Testthree", "Dorrie", "Jovin"]},
+  "stt": {"provider": "deepgram", "model": "nova-3", "language": "multi", "keyterms": ["Riverside Family Medicine", "Gary Testone", "Dorrie Testtwo", "Jovin Testthree", "Sandboxtest", "Gary Sandboxtest", "Testone", "Testtwo", "Testthree", "Dorrie", "Jovin"]},
   "tts": {"provider": "elevenlabs", "model": "eleven_turbo_v2_5"},
   "turn": {"endpointing_min_delay": 0.4, "endpointing_max_delay": 2.0, "interruption_mode": "adaptive",
            "preemptive_generation": false, "min_interruption_words": 1},
